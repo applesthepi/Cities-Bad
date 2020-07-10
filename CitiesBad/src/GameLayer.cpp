@@ -1,4 +1,5 @@
 #include "GameLayer.h"
+#include "road/Lane.h"
 
 #include <stb_image/stb_image.h>
 #include <GLCore/Core/KeyCodes.h>
@@ -9,7 +10,7 @@ using namespace GLCore::Utils;
 GameLayer::GameLayer()
 	: m_CameraController(16.0f / 9.0f, false)
 {
-
+	m_CameraController.GetCamera().SetPosition({0.0f, 0.0f, 0.0f});
 }
 
 GameLayer::~GameLayer()
@@ -37,23 +38,14 @@ static GLuint LoadTexture(const std::string& path)
 	return textureID;
 }
 
-struct Vertex
-{
-	float Position[3];
-	float Color[4];
-	float TexCoord[2];
-	float TexID;
-};
-
-static const size_t VertexFloatCount = sizeof(Vertex) / sizeof(float);
 static const uint8_t VertexCount = 4;
-static const uint8_t ObjectCount = 3;
+static const uint8_t ObjectCount = 2;
 
 static const float DefaultPositions[] = {
 	0.0f, 0.0f, 0.0f,
-	1.0f, 0.0f, 0.0f,
-	1.0f, 1.0f, 0.0f,
-	0.0f, 1.0f, 0.0f,
+	0.1f, 0.0f, 0.0f,
+	0.1f, 0.1f, 0.0f,
+	0.0f, 0.1f, 0.0f,
 };
 
 static const float DefaultColors[] = {
@@ -134,6 +126,21 @@ static void PositionSet(float* buffer, uint32_t idx, glm::vec2 position)
 	}
 }
 
+GLuint lnVA, lnVB, lnIB;
+Lane ln;
+std::vector<Vertex>* lnVertices;
+std::vector<uint32_t>* lnIndices;
+
+float lnLPos0[2] = { 0.0f, 0.0f };
+float lnLPos1[2] = { 0.0f, 0.0f };
+float lnLBez[2] = { 0.0f, 0.0f };
+
+float lnPos0[2] = { 0.0f, 0.0f };
+float lnPos1[2] = { 0.0f, 0.0f };
+float lnBez[2] = { 0.0f, 0.0f };
+
+GLuint cubeVA, cubeVB, cubeIB;
+
 void GameLayer::OnAttach()
 {
 	// setup
@@ -149,7 +156,34 @@ void GameLayer::OnAttach()
 		"assets/shaders/test.frag.glsl"
 	);
 
-	// uniforms
+	// debug
+
+	//ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 5.0f, 0.0f, 1.0f });
+	//ln.SetBezier({ 2.5f, 1.0f });
+	//ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 5.0f });
+	//ln.SetBezier({ 0.0f, 2.5f });
+	ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 3.0f, 0.0f, 3.0f });
+	ln.SetBezier({ 0.0f, 3.0f });
+	ln.Generate();
+
+	lnVertices = ln.GetVertices();
+	lnIndices = ln.GetIndices();
+
+	lnPos1[0] = 3.0f;
+	lnPos1[1] = 3.0f;
+
+	lnBez[0] = 0.0f;
+	lnBez[1] = 3.0f;
+
+
+
+	lnLPos1[0] = 3.0f;
+	lnLPos1[1] = 3.0f;
+
+	lnLBez[0] = 0.0f;
+	lnLBez[1] = 3.0f;
+
+	// Uniforms
 
 	glUseProgram(m_Shader->GetRendererID());
 	auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
@@ -158,14 +192,14 @@ void GameLayer::OnAttach()
 
 	// VAO
 
-	glCreateVertexArrays(1, &m_QuadVA);
-	glBindVertexArray(m_QuadVA);
+	glCreateVertexArrays(1, &lnVA);
+	glBindVertexArray(lnVA);
 
 	// VBO
 
-	glCreateBuffers(1, &m_QuadVB);
-	glBindBuffer(GL_ARRAY_BUFFER, m_QuadVB);
-	glBufferData(GL_ARRAY_BUFFER, VertexFloatCount * ObjectCount * VertexCount * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+	glCreateBuffers(1, &lnVB);
+	glBindBuffer(GL_ARRAY_BUFFER, lnVB);
+	glBufferData(GL_ARRAY_BUFFER, lnVertices->size() * sizeof(Vertex), lnVertices->data(), GL_STATIC_DRAW);
 
 	// attribs
 
@@ -181,53 +215,81 @@ void GameLayer::OnAttach()
 	glEnableVertexAttribArray(3);
 	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexID));
 
-	// generate GrandBuffer
+	glCreateBuffers(1, &lnIB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lnIB);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * lnIndices->size(), lnIndices->data(), GL_STATIC_DRAW);
 
-	m_GrandBuffer = CreateBuffer(ObjectCount, &m_GradeBufferCount);
+	//
+	//
+	//
 
-	// generate indices
+	float cubeData[] = {
+		0.0f, 0.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		10.0f, 0.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		10.0f, 10.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 10.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
 
-	uint32_t indices[ObjectCount * 6];
+		0.0f, 0.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		10.0f, 0.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		10.0f, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+	};
 
-	for (uint32_t i = 0; i < ObjectCount; i++)
-	{
-		Default(m_GrandBuffer, i);
-		PositionSet(m_GrandBuffer, i, { i * 1.5f, 0.0f });
+	uint32_t cubeIndices[] = {
+		// front
+		0, 1, 2, 2, 3, 0,
+		// back
+		4, 5, 6, 6, 7, 4,
+		// left
+		0, 4, 7, 7, 3, 0,
+		// right
+		1, 5, 6, 6, 2, 1,
+		// top
+		4, 5, 1, 1, 0, 4,
+		// bottom
+		7, 6, 2, 2, 3, 7
+	};
 
-		indices[(i * 6) + 0] = (i * 4) + 0;
-		indices[(i * 6) + 1] = (i * 4) + 1;
-		indices[(i * 6) + 2] = (i * 4) + 2;
-		indices[(i * 6) + 3] = (i * 4) + 2;
-		indices[(i * 6) + 4] = (i * 4) + 3;
-		indices[(i * 6) + 5] = (i * 4) + 0;
-	}
+	glCreateVertexArrays(1, &cubeVA);
+	glBindVertexArray(cubeVA);
 
-	glCreateBuffers(1, &m_QuadIB);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_QuadIB);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+	// VBO
+
+	glCreateBuffers(1, &cubeVB);
+	glBindBuffer(GL_ARRAY_BUFFER, cubeVB);
+	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(Vertex), cubeData, GL_STATIC_DRAW);
+
+	// attribs
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Position));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Color));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexCoord));
+
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexID));
+
+	glCreateBuffers(1, &cubeIB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIB);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cubeIndices, GL_STATIC_DRAW);
 
 	m_TexPixel = LoadTexture("assets/textures/pixel.png");
 	m_TexTest = LoadTexture("assets/textures/test.png");
-
-	// print GrandBuffer
-
-	for (uint32_t i = 0; i < ObjectCount * VertexCount * VertexFloatCount; i++)
-	{
-		if (i % (sizeof(Vertex) / sizeof(float)) == 0)
-			printf("\n");
-
-		if (i % ((sizeof(Vertex) / sizeof(float)) * VertexCount) == 0)
-			printf("\n");
-
-		printf("%f, ", m_GrandBuffer[i]);
-	}
 }
 
 void GameLayer::OnDetach()
 {
-	glDeleteVertexArrays(1, &m_QuadVA);
-	glDeleteBuffers(1, &m_QuadVB);
-	glDeleteBuffers(1, &m_QuadIB);
+	//glDeleteVertexArrays(1, &m_QuadVA);
+	//glDeleteBuffers(1, &m_QuadVB);
+	//glDeleteBuffers(1, &m_QuadIB);
+
+	glDeleteVertexArrays(1, &lnVA);
+	glDeleteBuffers(1, &lnVB);
+	glDeleteBuffers(1, &lnIB);
 }
 
 static bool movLeft = false;
@@ -280,7 +342,7 @@ void GameLayer::OnEvent(Event& event)
 		});
 }
 
-static const glm::vec4 GeneralColor = { 1.0f, 1.0f, 1.0f, 1.0f };
+glm::vec4 GeneralColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 void GameLayer::OnUpdate(Timestep ts)
 {
@@ -295,13 +357,63 @@ void GameLayer::OnUpdate(Timestep ts)
 
 	m_CameraController.OnUpdate(ts);
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_QuadVB);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * VertexCount * VertexFloatCount * ObjectCount, m_GrandBuffer);
+	//glBindBuffer(GL_ARRAY_BUFFER, m_QuadVB);
+	//glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * VertexCount * VertexFloatCount * ObjectCount, m_GrandBuffer);
+	//
+	//glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//
+	//glUseProgram(m_Shader->GetRendererID());
+	//glBindTextureUnit(0, m_TexPixel);
+	//glBindTextureUnit(1, m_TexTest);
+	//
+	//int location = 0;
+	//
+	//location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
+	//glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_CameraController.GetCamera().GetViewProjectionMatrix()));
+	//
+	//location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
+	//glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
+	//
+	//glBindVertexArray(m_QuadVA);
+	//glDrawElements(GL_TRIANGLES, ObjectCount * 6, GL_UNSIGNED_INT, nullptr);
+
+	glUseProgram(m_Shader->GetRendererID());
+	glBindVertexArray(lnVA);
+
+	if (lnPos0[0] != lnLPos0[0] || lnPos0[1] != lnLPos0[1] ||
+		lnPos1[0] != lnLPos1[0] || lnPos1[1] != lnLPos1[1] ||
+		lnBez[0] != lnLBez[0] || lnBez[1] != lnLBez[1])
+	{
+		lnLPos0[0] = lnPos0[0];
+		lnLPos0[1] = lnPos0[1];
+
+		lnLPos1[0] = lnPos1[0];
+		lnLPos1[1] = lnPos1[1];
+
+		lnLBez[0] = lnBez[0];
+		lnLBez[1] = lnBez[1];
+
+		ln.SetPosition({ lnPos0[0], 0.0f, lnPos0[1] }, { lnPos1[0], 0.0f, lnPos1[1] });
+		ln.SetBezier({ lnBez[0], lnBez[1] });
+		ln.Generate();
+		puts("regen");
+
+		//glDeleteBuffers(1, &lnVB);
+		//glDeleteBuffers(1, &lnIB);
+
+		//glGenBuffers(GL_ARRAY_BUFFER, &lnVB);
+		glBindBuffer(GL_ARRAY_BUFFER, lnVB);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * lnVertices->size(), lnVertices->data(), GL_STATIC_DRAW);
+
+		//glGenBuffers(GL_ELEMENT_ARRAY_BUFFER, &lnIB);
+		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lnIB);
+		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * lnIndices->size(), lnIndices->data(), GL_STATIC_DRAW);
+	}
 
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glUseProgram(m_Shader->GetRendererID());
 	glBindTextureUnit(0, m_TexPixel);
 	glBindTextureUnit(1, m_TexTest);
 
@@ -313,11 +425,30 @@ void GameLayer::OnUpdate(Timestep ts)
 	location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
 	glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
 
-	glBindVertexArray(m_QuadVA);
-	glDrawElements(GL_TRIANGLES, 12, GL_UNSIGNED_INT, nullptr);
+	//glBindVertexArray(lnVA);
+	//glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
+
+	glBindVertexArray(cubeVA);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }
 
 void GameLayer::OnImGuiRender()
 {
+	ImGui::Begin("Lane");
 
+	ImGui::SliderFloat2("P0", lnPos0, -10.0f, 10.0f);
+	ImGui::SliderFloat2("P1", lnPos1, -10.0f, 10.0f);
+	ImGui::SliderFloat2("Bez", lnBez, -10.0f, 10.0f);
+
+	ImGui::Columns(2, "rEEEe");
+	
+	for (uint32_t i = 0; i < Vertex::SLOPE_DEBUG.size(); i++)
+		ImGui::Text(Vertex::SLOPE_DEBUG[i].c_str());
+
+	ImGui::NextColumn();
+
+	for (uint32_t i = 0; i < Vertex::NV_DEBUG.size(); i++)
+		ImGui::Text(Vertex::NV_DEBUG[i].c_str());
+
+	ImGui::End();
 }

@@ -65,7 +65,7 @@
       <MinimalRebuild>false</MinimalRebuild>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -85,7 +85,7 @@
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -95,10 +95,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="src\GameLayer.h" />
+    <ClInclude Include="src\road\Clip.h" />
+    <ClInclude Include="src\road\ClipGroup.h" />
+    <ClInclude Include="src\road\Lane.h" />
+    <ClInclude Include="src\road\Vertex.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ExampleApp.cpp" />
     <ClCompile Include="src\GameLayer.cpp" />
+    <ClCompile Include="src\road\Clip.cpp" />
+    <ClCompile Include="src\road\ClipGroup.cpp" />
+    <ClCompile Include="src\road\Lane.cpp" />
+    <ClCompile Include="src\road\Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenGL-Core\OpenGL-Core.vcxproj">
