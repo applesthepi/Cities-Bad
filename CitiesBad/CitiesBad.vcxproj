@@ -42,15 +42,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>..\bin\Debug-windows-x86_64\OpenGL-Examples\</OutDir>
-    <IntDir>..\bin-int\Debug-windows-x86_64\OpenGL-Examples\</IntDir>
+    <OutDir>..\bin\Debug-windows-x86_64\Cities-Bad\</OutDir>
+    <IntDir>..\bin-int\Debug-windows-x86_64\Cities-Bad\</IntDir>
     <TargetName>OpenGL-Examples</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>..\bin\Release-windows-x86_64\OpenGL-Examples\</OutDir>
-    <IntDir>..\bin-int\Release-windows-x86_64\OpenGL-Examples\</IntDir>
+    <OutDir>..\bin\Release-windows-x86_64\Cities-Bad\</OutDir>
+    <IntDir>..\bin-int\Release-windows-x86_64\Cities-Bad\</IntDir>
     <TargetName>OpenGL-Examples</TargetName>
     <TargetExt>.exe</TargetExt>
   </PropertyGroup>
@@ -99,6 +99,7 @@
     <ClInclude Include="src\road\ClipGroup.h" />
     <ClInclude Include="src\road\Lane.h" />
     <ClInclude Include="src\road\Vertex.h" />
+    <ClInclude Include="src\ui\Camera.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ExampleApp.cpp" />
@@ -107,6 +108,7 @@
     <ClCompile Include="src\road\ClipGroup.cpp" />
     <ClCompile Include="src\road\Lane.cpp" />
     <ClCompile Include="src\road\Vertex.cpp" />
+    <ClCompile Include="src\ui\Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OpenGL-Core\OpenGL-Core.vcxproj">

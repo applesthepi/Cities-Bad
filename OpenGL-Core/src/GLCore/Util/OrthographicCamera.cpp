@@ -7,8 +7,8 @@
 namespace GLCore::Utils {
 
 	OrthographicCamera::OrthographicCamera(float left, float right, float bottom, float top)
-		: m_ProjectionMatrix(glm::ortho(left, right, bottom, top, -1.0f, 1.0f)), m_ViewMatrix(1.0f)
-		//: m_ProjectionMatrix(glm::perspective<float>(glm::radians(90.0f), 16.0f / 9.0f, 0.001f, 10000.0f)), m_ViewMatrix(1.0f)
+		//: m_ProjectionMatrix(glm::ortho(left, right, bottom, top, -1.0f, 1000.0f)), m_ViewMatrix(1.0f)
+		: m_ProjectionMatrix(glm::perspective(glm::radians(45.0f), 4.0f / 3.0f, 0.1f, 100.f)), m_ViewMatrix(1.0f)
 	{
 		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 	}

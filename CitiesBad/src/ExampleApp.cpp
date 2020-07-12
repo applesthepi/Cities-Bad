@@ -7,7 +7,7 @@ class Example : public Application
 {
 public:
 	Example()
-		: Application("Cities Bad")
+		: Application("Cities Bad", 1920, 1080)
 	{
 		PushLayer(new GameLayer());
 	}

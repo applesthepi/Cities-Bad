@@ -3,14 +3,15 @@
 
 #include <stb_image/stb_image.h>
 #include <GLCore/Core/KeyCodes.h>
+#include <numbers>
 
 using namespace GLCore;
 using namespace GLCore::Utils;
 
 GameLayer::GameLayer()
-	: m_CameraController(16.0f / 9.0f, false)
+	:m_Camera(glm::radians(45.0f), 16.0f / 9.0f, 0.1f, 10000.0f)
 {
-	m_CameraController.GetCamera().SetPosition({0.0f, 0.0f, 0.0f});
+	m_Camera.SetPosition({ 0.0f, 0.0f, 0.0f });
 }
 
 GameLayer::~GameLayer()
@@ -140,6 +141,7 @@ float lnPos1[2] = { 0.0f, 0.0f };
 float lnBez[2] = { 0.0f, 0.0f };
 
 GLuint cubeVA, cubeVB, cubeIB;
+GLuint cube2VA, cube2VB, cube2IB;
 
 void GameLayer::OnAttach()
 {
@@ -224,15 +226,15 @@ void GameLayer::OnAttach()
 	//
 
 	float cubeData[] = {
-		0.0f, 0.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		10.0f, 0.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		10.0f, 10.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 10.0f, 10.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 0.0f, 0.0f,
 
-		0.0f, 0.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		10.0f, 0.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		10.0f, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 10.0f, 20.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
 	};
 
 	uint32_t cubeIndices[] = {
@@ -277,6 +279,64 @@ void GameLayer::OnAttach()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cubeIndices, GL_STATIC_DRAW);
 
+	//
+	//
+	//
+
+	float cube2Data[] = {
+		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 0.0f, 0.0f,
+
+		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+	};
+
+	uint32_t cube2Indices[] = {
+		// front
+		0, 1, 2, 2, 3, 0,
+		// back
+		4, 5, 6, 6, 7, 4,
+		// left
+		0, 4, 7, 7, 3, 0,
+		// right
+		1, 5, 6, 6, 2, 1,
+		// top
+		4, 5, 1, 1, 0, 4,
+		// bottom
+		7, 6, 2, 2, 3, 7
+	};
+
+	glCreateVertexArrays(1, &cube2VA);
+	glBindVertexArray(cube2VA);
+
+	// VBO
+
+	glCreateBuffers(1, &cube2VB);
+	glBindBuffer(GL_ARRAY_BUFFER, cube2VB);
+	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(Vertex), cube2Data, GL_STATIC_DRAW);
+
+	// attribs
+
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Position));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Color));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexCoord));
+
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexID));
+
+	glCreateBuffers(1, &cube2IB);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
+
 	m_TexPixel = LoadTexture("assets/textures/pixel.png");
 	m_TexTest = LoadTexture("assets/textures/test.png");
 }
@@ -294,13 +354,22 @@ void GameLayer::OnDetach()
 
 static bool movLeft = false;
 static bool movRight = false;
+static bool movForwards = false;
+static bool movBackwards = false;
+
 static bool movUp = false;
 static bool movDown = false;
 
+static bool rotXD = false;
+static bool rotXU = false;
+static bool rotYD = false;
+static bool rotYU = false;
+
+static float mouseMiddleX = 0.0f;
+static float mouseMiddleY = 0.0f;
+
 void GameLayer::OnEvent(Event& event)
 {
-	m_CameraController.OnEvent(event);
-
 	EventDispatcher dispatcher(event);
 	dispatcher.Dispatch<MouseButtonPressedEvent>(
 		[&](MouseButtonPressedEvent& e)
@@ -320,9 +389,22 @@ void GameLayer::OnEvent(Event& event)
 			if (e.GetKeyCode() == HZ_KEY_D)
 				movRight = true;
 			if (e.GetKeyCode() == HZ_KEY_W)
-				movUp = true;
+				movForwards = true;
 			if (e.GetKeyCode() == HZ_KEY_S)
+				movBackwards = true;
+			if (e.GetKeyCode() == HZ_KEY_Q)
+				movUp = true;
+			if (e.GetKeyCode() == HZ_KEY_E)
 				movDown = true;
+
+			if (e.GetKeyCode() == HZ_KEY_UP)
+				rotXD = true;
+			if (e.GetKeyCode() == HZ_KEY_DOWN)
+				rotXU = true;
+			if (e.GetKeyCode() == HZ_KEY_LEFT)
+				rotYD = true;
+			if (e.GetKeyCode() == HZ_KEY_RIGHT)
+				rotYU = true;
 
 			return false;
 		});
@@ -334,9 +416,35 @@ void GameLayer::OnEvent(Event& event)
 			if (e.GetKeyCode() == HZ_KEY_D)
 				movRight = false;
 			if (e.GetKeyCode() == HZ_KEY_W)
-				movUp = false;
+				movForwards = false;
 			if (e.GetKeyCode() == HZ_KEY_S)
+				movBackwards = false;
+			if (e.GetKeyCode() == HZ_KEY_Q)
+				movUp = false;
+			if (e.GetKeyCode() == HZ_KEY_E)
 				movDown = false;
+
+			if (e.GetKeyCode() == HZ_KEY_UP)
+				rotXD = false;
+			if (e.GetKeyCode() == HZ_KEY_DOWN)
+				rotXU = false;
+			if (e.GetKeyCode() == HZ_KEY_LEFT)
+				rotYD = false;
+			if (e.GetKeyCode() == HZ_KEY_RIGHT)
+				rotYU = false;
+
+			return false;
+		});
+	dispatcher.Dispatch<MouseMovedEvent>(
+		[&](MouseMovedEvent& e)
+		{
+			mouseMiddleX = e.GetX() - (1920 / 2);
+			mouseMiddleY = (1080 / 2) - e.GetY();
+
+			if (mouseMiddleY > 89.0f)
+				mouseMiddleY = 89.0f;
+			if (mouseMiddleY < -89.0f)
+				mouseMiddleY = -89.0f;
 
 			return false;
 		});
@@ -344,40 +452,107 @@ void GameLayer::OnEvent(Event& event)
 
 glm::vec4 GeneralColor = { 1.0f, 1.0f, 1.0f, 1.0f };
 
+float obj1Pos[3] = { 2.0f, 0.0f, 0.0f };
+float obj1Rot[3] = { 0.0f, 0.0f, 0.0f };
+
+float obj2Pos[3] = { -2.0f, 0.0f, 0.0f };
+float obj2Rot[3] = { 0.0f, 0.0f, 0.0f };
+
+float camPos[3] = { 0.0f, 0.0f, -10.0f };
+float camRot[3] = { 0.0f, 0.0f, 0.0f };
+
+//void CreateMVP(glm::vec3 objectPosition, glm::vec3 objectRotation, glm::vec3 cameraPosition, glm::vec3 cameraRotation, GLuint locationMVP)
+//{
+//	glm::mat4 Model = glm::mat4(1.0f);
+//	glm::mat4 View = glm::mat4(1.0f);
+//	glm::mat4 Projection = glm::mat4(1.0f);
+//
+//	// Model
+//
+//	Model = glm::translate(Model, glm::vec3(1.0f, 1.0f, -1.0f) * objectPosition);
+//	Model = glm::rotate(Model, objectRotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+//	Model = glm::rotate(Model, objectRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+//	Model = glm::rotate(Model, objectRotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+//
+//	// View
+//
+//	View = glm::rotate(View, cameraRotation.x, glm::vec3(-1.0f, 0.0f, 0.0f));
+//	View = glm::rotate(View, cameraRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+//	View = glm::rotate(View, cameraRotation.z, glm::vec3(0.0f, 0.0f, -1.0f));
+//	View = glm::translate(View, glm::vec3(-1.0f, -1.0f, 1.0f) * cameraPosition);
+//
+//	// Projection
+//
+//	Projection = glm::perspective(glm::radians(90.0f), 16.0f / 9.0f, 0.1f, 10000.f);
+//
+//	glm::mat4 MVP = Projection * View * Model;
+//	glUniformMatrix4fv(locationMVP, 1, GL_FALSE, glm::value_ptr(MVP));
+//}
+
 void GameLayer::OnUpdate(Timestep ts)
 {
+	using std::numbers::pi;
+
+	//if (rotXD)
+	//	m_Camera.Rotate(glm::vec3(ts * 1.0f, 0.0f, 0.0f));
+	//if (rotXU)
+	//	m_Camera.Rotate(glm::vec3(ts * -1.0f, 0.0f, 0.0f));
+	//if (rotYD)
+	//	m_Camera.Rotate(glm::vec3(0.0f, ts * -1.0f, 0.0f));
+	//if (rotYU)
+	//	m_Camera.Rotate(glm::vec3(0.0f, ts * 1.0f, 0.0f));
+	
+	glm::vec3 direction;
+	direction.x = cos(glm::radians(mouseMiddleX));
+	direction.y = sin(glm::radians(mouseMiddleY));
+	direction.z = sin(glm::radians(mouseMiddleX));
+
+	m_Camera.SetRotation(direction);
+
+	//glm::vec3 upV = glm::vec3(1.0f, 0.0f, 0.0f);
+	//float somethingS = glm::dot(m_Camera.GetRotation(), upV);
+
+	//printf("%f, %f, %f\n", glm::normalize(m_Camera.GetRotation()).x, glm::normalize(m_Camera.GetRotation()).y, glm::normalize(m_Camera.GetRotation()).z);
+
+	float movSpeed = ts * 5.0f;
+
+	//glm::vec3 movementChange = glm::vec3(0.0f, 0.0f, 0.0f);
+
+	//if (movLeft)
+	//	movementChange.x += 5.0f;
+	//if (movRight)
+	//	movementChange.x += -5.0f;
+	//if (movForwards)
+	//	movementChange.z += 5.0f;
+	//if (movBackwards)
+	//	movementChange.z += -5.0f;
+	//if (movUp)
+	//	movementChange.y += -5.0f;
+	//if (movDown)
+	//	movementChange.y += 5.0f;
+
+	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
+	if (movForwards)
+		m_Camera.TranslateForward(movSpeed * m_Camera.GetForward());
+	if (movBackwards)
+		m_Camera.TranslateForward(movSpeed * m_Camera.GetForward() * -1.0f);
 	if (movLeft)
-		m_CameraController.GetCamera().SetPosition(m_CameraController.GetCamera().GetPosition() + glm::vec3(ts * -3.0f, 0.0f, 0.0f));
+		m_Camera.TranslateForward(movSpeed * -1.0f * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
 	if (movRight)
-		m_CameraController.GetCamera().SetPosition(m_CameraController.GetCamera().GetPosition() + glm::vec3(ts * 3.0f, 0.0f, 0.0f));
-	if (movUp)
-		m_CameraController.GetCamera().SetPosition(m_CameraController.GetCamera().GetPosition() + glm::vec3(0.0f, ts * 3.0f, 0.0f));
-	if (movDown)
-		m_CameraController.GetCamera().SetPosition(m_CameraController.GetCamera().GetPosition() + glm::vec3(0.0f, ts * -3.0f, 0.0f));
+		m_Camera.TranslateForward(movSpeed * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
+	//if (movUp)
+	//	m_Camera.TranslateForward(movSpeed * glm::vec3(0.0f, -1.0f, 0.0f) * m_Camera.GetForward());
+	//if (movDown)
+	//	m_Camera.TranslateForward(movSpeed * glm::vec3(0.0f, 1.0f, 0.0f) * m_Camera.GetForward());
 
-	m_CameraController.OnUpdate(ts);
+	//printf("%f, %f, %f\n", movementChange.x, movementChange.y, movementChange.z);
+	//m_Camera.SetPosition({ 0.0f, 0.0f, 0.0f });
+	//m_Camera.TranslateForward(movSpeed * glm::vec3() * m_Camera.GetForward());
 
-	//glBindBuffer(GL_ARRAY_BUFFER, m_QuadVB);
-	//glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(float) * VertexCount * VertexFloatCount * ObjectCount, m_GrandBuffer);
-	//
-	//glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	//
-	//glUseProgram(m_Shader->GetRendererID());
-	//glBindTextureUnit(0, m_TexPixel);
-	//glBindTextureUnit(1, m_TexTest);
-	//
-	//int location = 0;
-	//
-	//location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
-	//glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_CameraController.GetCamera().GetViewProjectionMatrix()));
-	//
-	//location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
-	//glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
-	//
-	//glBindVertexArray(m_QuadVA);
-	//glDrawElements(GL_TRIANGLES, ObjectCount * 6, GL_UNSIGNED_INT, nullptr);
-
+	//m_Camera.SetPosition({ camPos[0], camPos[1], camPos[2] });
+	//m_Camera.SetRotation({ camRot[0], camRot[1], camRot[2] });
+	
 	glUseProgram(m_Shader->GetRendererID());
 	glBindVertexArray(lnVA);
 
@@ -419,22 +594,48 @@ void GameLayer::OnUpdate(Timestep ts)
 
 	int location = 0;
 
-	location = glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewProjection");
-	glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(m_CameraController.GetCamera().GetViewProjectionMatrix()));
-
 	location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
 	glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
 
 	//glBindVertexArray(lnVA);
 	//glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
 
+	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
+		glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
+		glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
+		glm::vec3(1.0f, 1.0f, 1.0f)
+	)));
+
 	glBindVertexArray(cubeVA);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+
+	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
+		glm::vec3(obj2Pos[0], obj2Pos[1], obj2Pos[2]),
+		glm::vec3(obj2Rot[0], obj2Rot[1], obj2Rot[2]),
+		glm::vec3(1.0f, 1.0f, 1.0f)
+	)));
+
+	glBindVertexArray(cube2VA);
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }
 
 void GameLayer::OnImGuiRender()
 {
+	using std::numbers::pi;
+
 	ImGui::Begin("Lane");
+
+	//ImGui::SliderFloat3("CAM position", camPos, -100.0f, 100.0f);
+	//ImGui::SliderFloat3("CAM rotation", camRot, -pi, pi);
+	//ImGui::NewLine();
+
+	ImGui::SliderFloat3("OBJ1 position", obj1Pos, -100.0f, 100.0f);
+	ImGui::SliderFloat3("OBJ1 rotation", obj1Rot, -pi, pi);
+	ImGui::NewLine();
+
+	ImGui::SliderFloat3("OBJ2 position", obj2Pos, -100.0f, 100.0f);
+	ImGui::SliderFloat3("OBJ2 rotation", obj2Rot, -pi, pi);
+	ImGui::NewLine();
 
 	ImGui::SliderFloat2("P0", lnPos0, -10.0f, 10.0f);
 	ImGui::SliderFloat2("P1", lnPos1, -10.0f, 10.0f);

@@ -7,6 +7,7 @@
     <ClCompile Include="src\road\Clip.cpp" />
     <ClCompile Include="src\road\ClipGroup.cpp" />
     <ClCompile Include="src\road\Vertex.cpp" />
+    <ClCompile Include="src\ui\Camera.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\GameLayer.h" />
@@ -14,5 +15,6 @@
     <ClInclude Include="src\road\Clip.h" />
     <ClInclude Include="src\road\ClipGroup.h" />
     <ClInclude Include="src\road\Vertex.h" />
+    <ClInclude Include="src\ui\Camera.h" />
   </ItemGroup>
 </Project>

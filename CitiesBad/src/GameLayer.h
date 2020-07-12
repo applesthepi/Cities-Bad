@@ -1,4 +1,5 @@
 #pragma once
+#include "ui/Camera.h"
 
 #include <GLCore.h>
 #include <GLCoreUtils.h>
@@ -17,7 +18,7 @@ public:
 	virtual void OnImGuiRender() override;
 private:
 	GLCore::Utils::Shader* m_Shader;
-	GLCore::Utils::OrthographicCameraController m_CameraController;
+	Camera m_Camera;
 	
 	GLuint m_QuadVA, m_QuadVB, m_QuadIB;
 	GLuint m_TexPixel, m_TexTest;
