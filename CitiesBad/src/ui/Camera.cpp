@@ -3,16 +3,44 @@
 #include <numbers>
 
 Camera::Camera(float fovRadians, float aspect, float nearZ, float farZ)
-	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_NeedsVPUpdate(true), m_VP(glm::mat4(1.0f)), m_Position(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraFront(glm::vec3(0.0f, 0.0f, 1.0f)) {}
+	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_NeedsVPUpdate(true), m_VP(glm::mat4(1.0f)),
+	m_Position(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraFront(glm::vec3(0.0f, 0.0f, 1.0f)) {}
 
 
-void Camera::SetRotation(glm::vec3 rotation)
+void Camera::SetRotation(glm::vec2 rotation)
 {
 	using std::numbers::pi;
 
-	m_Rotation = rotation;
-	m_CameraFront = glm::normalize(rotation);
+	static float borderTop = pi / 2.0f - 0.05f;
+	static float borderBottom = pi / -2.0f + 0.05f;
+
+	if (rotation.x < borderBottom)
+		rotation.x = borderBottom;
+	else if (rotation.x > borderTop)
+		rotation.x = borderTop;
+
+	//if (rotation.y < 0.1f)
+	//	rotation.y = 0.1f;
+	//else if (rotation.y > pi - 0.1f)
+	//	rotation.y = pi - 0.1f;
+
+	rotation.y -= pi / 2.0f;
+	m_Rotation = glm::vec3(rotation.x, rotation.y, 0.0f);
+
+	m_CameraFront.x = cos(rotation.y) * cos(rotation.x);
+	m_CameraFront.z = sin(rotation.y) * cos(rotation.x);
+	m_CameraFront.y = sin(rotation.x);
+
 	m_NeedsVPUpdate = true;
+
+
+
+
+	//using std::numbers::pi;
+	//
+	//m_Rotation = rotation;
+	//m_CameraFront = glm::normalize(rotation);
+	//m_NeedsVPUpdate = true;
 }
 
 void Camera::SetPosition(glm::vec3 position)
@@ -23,7 +51,7 @@ void Camera::SetPosition(glm::vec3 position)
 
 void Camera::Translate(glm::vec3 position)
 {
-	m_Position += position;
+	m_Position += glm::vec3(-position.x, position.y, -position.z);
 	m_NeedsVPUpdate = true;
 }
 
@@ -35,9 +63,9 @@ void Camera::TranslateForward(glm::vec3 position)
 
 void Camera::Rotate(glm::vec3 rotation)
 {
-	m_Rotation = glm::normalize(rotation + m_Rotation);
-	printf("%f, %f, %f\n", m_Rotation.x, m_Rotation.y, m_Rotation.z);
-	m_NeedsVPUpdate = true;
+	//m_Rotation = glm::normalize(rotation + m_Rotation);
+	//printf("%f, %f, %f\n", m_Rotation.x, m_Rotation.y, m_Rotation.z);
+	//m_NeedsVPUpdate = true;
 }
 
 void Camera::SetFOV(float radians)
@@ -97,7 +125,9 @@ void Camera::ConstructVP()
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	glm::mat4 projection = glm::perspective(glm::radians(90.0f), 16.0f / 9.0f, 0.1f, 10000.f);
-	glm::mat4 view = glm::lookAt(m_Position, m_Position + m_CameraFront, cameraUp);
+	glm::mat4 view = glm::lookAt(
+		glm::vec3(-m_Position.x, m_Position.y, -m_Position.z),
+		glm::vec3(-m_Position.x, m_Position.y, -m_Position.z) + m_CameraFront, cameraUp);
 	
 	//view = glm::rotate(view, m_Rotation.x, glm::vec3(-1.0f, 0.0f, 0.0f));
 	//view = glm::rotate(view, m_Rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));

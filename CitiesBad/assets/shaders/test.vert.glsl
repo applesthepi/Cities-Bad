@@ -9,7 +9,7 @@ uniform mat4 u_MVP;
 
 out vec4 v_Color;
 out vec2 v_TexCoord;
-out float v_TexID;
+out flat float v_TexID;
 
 void main()
 {

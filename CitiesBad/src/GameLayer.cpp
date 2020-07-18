@@ -5,13 +5,170 @@
 #include <GLCore/Core/KeyCodes.h>
 #include <numbers>
 
+
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/*
+#include <libavcodec/avcodec.h>
+
+#define INBUF_SIZE 4096
+
+static void pgm_save(unsigned char* buf, int wrap, int xsize, int ysize,
+	char* filename)
+{
+	FILE* f;
+	int i;
+
+	f = fopen(filename, "w");
+	fprintf(f, "P5\n%d %d\n%d\n", xsize, ysize, 255);
+	for (i = 0; i < ysize; i++)
+		fwrite(buf + i * wrap, 1, xsize, f);
+	fclose(f);
+}
+
+static void decode(AVCodecContext* dec_ctx, AVFrame* frame, AVPacket* pkt,
+	const char* filename)
+{
+	char buf[1024];
+	int ret;
+
+	ret = avcodec_send_packet(dec_ctx, pkt);
+	if (ret < 0) {
+		fprintf(stderr, "Error sending a packet for decoding\n");
+		exit(1);
+	}
+
+	while (ret >= 0) {
+		ret = avcodec_receive_frame(dec_ctx, frame);
+		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+			return;
+		else if (ret < 0) {
+			fprintf(stderr, "Error during decoding\n");
+			exit(1);
+		}
+
+		printf("saving frame %3d\n", dec_ctx->frame_number);
+		fflush(stdout);
+
+		// the picture is allocated by the decoder. no need to
+		//   free it 
+		snprintf(buf, sizeof(buf), "%s-%d", filename, dec_ctx->frame_number);
+		pgm_save(frame->data[0], frame->linesize[0],
+			frame->width, frame->height, buf);
+	}
+}
+
+void runDecode()
+{
+	const char* filename, * outfilename;
+	const AVCodec* codec;
+	AVCodecParserContext* parser;
+	AVCodecContext* c = NULL;
+	FILE* f;
+	AVFrame* frame;
+	uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
+	uint8_t* data;
+	size_t   data_size;
+	int ret;
+	AVPacket* pkt;
+
+	filename = "input.avi";
+	outfilename = "output.avi";
+
+	pkt = av_packet_alloc();
+	if (!pkt)
+		exit(1);
+
+	// set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) 
+	memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+	// find the MPEG-1 video decoder 
+	codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
+	if (!codec) {
+		fprintf(stderr, "Codec not found\n");
+		exit(1);
+	}
+
+	parser = av_parser_init(codec->id);
+	if (!parser) {
+		fprintf(stderr, "parser not found\n");
+		exit(1);
+	}
+
+	c = avcodec_alloc_context3(codec);
+	if (!c) {
+		fprintf(stderr, "Could not allocate video codec context\n");
+		exit(1);
+	}
+
+	// For some codecs, such as msmpeg4 and mpeg4, width and height
+	//   MUST be initialized there because this information is not
+	//   available in the bitstream. 
+	//
+	//    open it 
+	if (avcodec_open2(c, codec, NULL) < 0) {
+		fprintf(stderr, "Could not open codec\n");
+		exit(1);
+	}
+
+	f = fopen(filename, "rb");
+	if (!f) {
+		fprintf(stderr, "Could not open %s\n", filename);
+		exit(1);
+	}
+
+	frame = av_frame_alloc();
+	if (!frame) {
+		fprintf(stderr, "Could not allocate video frame\n");
+		exit(1);
+	}
+
+	while (!feof(f)) {
+		// read raw data from the input file 
+		data_size = fread(inbuf, 1, INBUF_SIZE, f);
+		if (!data_size)
+			break;
+
+		// use the parser to split the data into frames 
+		data = inbuf;
+		while (data_size > 0) {
+			ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
+				data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
+			if (ret < 0) {
+				fprintf(stderr, "Error while parsing\n");
+				exit(1);
+			}
+			data += ret;
+			data_size -= ret;
+
+			if (pkt->size)
+				decode(c, frame, pkt, outfilename);
+		}
+	}
+
+	 flush the decoder 
+	decode(c, frame, NULL, outfilename);
+
+	fclose(f);
+
+	av_parser_close(parser);
+	avcodec_free_context(&c);
+	av_frame_free(&frame);
+	av_packet_free(&pkt);
+}
+*/
+
 using namespace GLCore;
 using namespace GLCore::Utils;
 
 GameLayer::GameLayer()
-	:m_Camera(glm::radians(45.0f), 16.0f / 9.0f, 0.1f, 10000.0f)
+	:m_Camera(glm::radians(70.0f), 16.0f / 9.0f, 0.1f, 10000.0f)
 {
-	m_Camera.SetPosition({ 0.0f, 0.0f, 0.0f });
+	m_Camera.SetPosition({ -2.0f, 1.0f, -2.0f });
+	m_Camera.SetRotation({ 0.0f, 0.0f });
 }
 
 GameLayer::~GameLayer()
@@ -145,13 +302,11 @@ GLuint cube2VA, cube2VB, cube2IB;
 
 void GameLayer::OnAttach()
 {
+	//runDecode();
+
 	// setup
 
 	EnableGLDebugging();
-
-	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	m_Shader = Shader::FromGLSLTextFiles(
 		"assets/shaders/test.vert.glsl",
@@ -188,6 +343,13 @@ void GameLayer::OnAttach()
 	// Uniforms
 
 	glUseProgram(m_Shader->GetRendererID());
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
+	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
+
 	auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
 	int samplers[2] = { 0, 1 };
 	glUniform1iv(loc, 2, samplers);
@@ -227,14 +389,14 @@ void GameLayer::OnAttach()
 
 	float cubeData[] = {
 		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f,
 
 		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
 	};
 
 	uint32_t cubeIndices[] = {
@@ -284,15 +446,15 @@ void GameLayer::OnAttach()
 	//
 
 	float cube2Data[] = {
-		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 1.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f,
 
-		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
 		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
 	};
 
 	uint32_t cube2Indices[] = {
@@ -438,13 +600,8 @@ void GameLayer::OnEvent(Event& event)
 	dispatcher.Dispatch<MouseMovedEvent>(
 		[&](MouseMovedEvent& e)
 		{
-			mouseMiddleX = e.GetX() - (1920 / 2);
-			mouseMiddleY = (1080 / 2) - e.GetY();
-
-			if (mouseMiddleY > 89.0f)
-				mouseMiddleY = 89.0f;
-			if (mouseMiddleY < -89.0f)
-				mouseMiddleY = -89.0f;
+			mouseMiddleX = (e.GetX() - (1920.0f / 2.0f));
+			mouseMiddleY = ((1080.0f / 2.0f) - e.GetY());
 
 			return false;
 		});
@@ -502,12 +659,18 @@ void GameLayer::OnUpdate(Timestep ts)
 	//if (rotYU)
 	//	m_Camera.Rotate(glm::vec3(0.0f, ts * 1.0f, 0.0f));
 	
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(mouseMiddleX));
-	direction.y = sin(glm::radians(mouseMiddleY));
-	direction.z = sin(glm::radians(mouseMiddleX));
+	glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
+	//direction.x = cos(glm::radians(mouseMiddleX));
+	//direction.y = sin(glm::radians(mouseMiddleY));
+	//direction.z = sin(glm::radians(mouseMiddleX));
 
-	m_Camera.SetRotation(direction);
+	//direction.x = mouseMiddleX;
+	//direction.y = mouseMiddleY;
+
+	direction.x = mouseMiddleY;
+	//direction.z = mouseMiddleX;
+
+	//m_Camera.SetRotation(direction);
 
 	//glm::vec3 upV = glm::vec3(1.0f, 0.0f, 0.0f);
 	//float somethingS = glm::dot(m_Camera.GetRotation(), upV);
@@ -534,13 +697,16 @@ void GameLayer::OnUpdate(Timestep ts)
 	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	if (movForwards)
-		m_Camera.TranslateForward(movSpeed * m_Camera.GetForward());
+		m_Camera.Translate(movSpeed * m_Camera.GetForward());
 	if (movBackwards)
-		m_Camera.TranslateForward(movSpeed * m_Camera.GetForward() * -1.0f);
+		m_Camera.Translate(-movSpeed * m_Camera.GetForward());
 	if (movLeft)
-		m_Camera.TranslateForward(movSpeed * -1.0f * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
+		m_Camera.Translate(-movSpeed * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
 	if (movRight)
-		m_Camera.TranslateForward(movSpeed * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
+		m_Camera.Translate(movSpeed * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
+
+	m_Camera.SetRotation({ mouseMiddleY / 150.0f, mouseMiddleX / 150.0f });
+
 	//if (movUp)
 	//	m_Camera.TranslateForward(movSpeed * glm::vec3(0.0f, -1.0f, 0.0f) * m_Camera.GetForward());
 	//if (movDown)
@@ -554,6 +720,11 @@ void GameLayer::OnUpdate(Timestep ts)
 	//m_Camera.SetRotation({ camRot[0], camRot[1], camRot[2] });
 	
 	glUseProgram(m_Shader->GetRendererID());
+
+	auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
+	int samplers[2] = { 0, 1 };
+	glUniform1iv(loc, 2, samplers);
+
 	glBindVertexArray(lnVA);
 
 	if (lnPos0[0] != lnLPos0[0] || lnPos0[1] != lnLPos0[1] ||
@@ -572,7 +743,6 @@ void GameLayer::OnUpdate(Timestep ts)
 		ln.SetPosition({ lnPos0[0], 0.0f, lnPos0[1] }, { lnPos1[0], 0.0f, lnPos1[1] });
 		ln.SetBezier({ lnBez[0], lnBez[1] });
 		ln.Generate();
-		puts("regen");
 
 		//glDeleteBuffers(1, &lnVB);
 		//glDeleteBuffers(1, &lnIB);
@@ -597,26 +767,38 @@ void GameLayer::OnUpdate(Timestep ts)
 	location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
 	glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
 
-	//glBindVertexArray(lnVA);
-	//glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
-
 	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
 		glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
 		glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
 		glm::vec3(1.0f, 1.0f, 1.0f)
 	)));
+	
+	glBindVertexArray(lnVA);
+	glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
 
-	glBindVertexArray(cubeVA);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-
-	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
-		glm::vec3(obj2Pos[0], obj2Pos[1], obj2Pos[2]),
-		glm::vec3(obj2Rot[0], obj2Rot[1], obj2Rot[2]),
-		glm::vec3(1.0f, 1.0f, 1.0f)
-	)));
-
-	glBindVertexArray(cube2VA);
-	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+	//glBindTextureUnit(0, m_TexPixel);
+	//glBindTextureUnit(1, m_TexTest);
+	//
+	//glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
+	//	glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
+	//	glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
+	//	glm::vec3(1.0f, 1.0f, 1.0f)
+	//)));
+	//
+	//glBindVertexArray(cubeVA);
+	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+	//
+	//glBindTextureUnit(0, m_TexPixel);
+	//glBindTextureUnit(1, m_TexTest);
+	//
+	//glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
+	//	glm::vec3(obj2Pos[0], obj2Pos[1], obj2Pos[2]),
+	//	glm::vec3(obj2Rot[0], obj2Rot[1], obj2Rot[2]),
+	//	glm::vec3(1.0f, 1.0f, 1.0f)
+	//)));
+	//
+	//glBindVertexArray(cube2VA);
+	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 }
 
 void GameLayer::OnImGuiRender()
@@ -629,27 +811,27 @@ void GameLayer::OnImGuiRender()
 	//ImGui::SliderFloat3("CAM rotation", camRot, -pi, pi);
 	//ImGui::NewLine();
 
-	ImGui::SliderFloat3("OBJ1 position", obj1Pos, -100.0f, 100.0f);
-	ImGui::SliderFloat3("OBJ1 rotation", obj1Rot, -pi, pi);
-	ImGui::NewLine();
-
-	ImGui::SliderFloat3("OBJ2 position", obj2Pos, -100.0f, 100.0f);
-	ImGui::SliderFloat3("OBJ2 rotation", obj2Rot, -pi, pi);
-	ImGui::NewLine();
+	//ImGui::SliderFloat3("OBJ1 position", obj1Pos, -100.0f, 100.0f);
+	//ImGui::SliderFloat3("OBJ1 rotation", obj1Rot, -pi, pi);
+	//ImGui::NewLine();
+	//
+	//ImGui::SliderFloat3("OBJ2 position", obj2Pos, -100.0f, 100.0f);
+	//ImGui::SliderFloat3("OBJ2 rotation", obj2Rot, -pi, pi);
+	//ImGui::NewLine();
 
 	ImGui::SliderFloat2("P0", lnPos0, -10.0f, 10.0f);
 	ImGui::SliderFloat2("P1", lnPos1, -10.0f, 10.0f);
 	ImGui::SliderFloat2("Bez", lnBez, -10.0f, 10.0f);
 
-	ImGui::Columns(2, "rEEEe");
-	
-	for (uint32_t i = 0; i < Vertex::SLOPE_DEBUG.size(); i++)
-		ImGui::Text(Vertex::SLOPE_DEBUG[i].c_str());
-
-	ImGui::NextColumn();
-
-	for (uint32_t i = 0; i < Vertex::NV_DEBUG.size(); i++)
-		ImGui::Text(Vertex::NV_DEBUG[i].c_str());
+	//ImGui::Columns(2, "rEEEe");
+	//
+	//for (uint32_t i = 0; i < Vertex::SLOPE_DEBUG.size(); i++)
+	//	ImGui::Text(Vertex::SLOPE_DEBUG[i].c_str());
+	//
+	//ImGui::NextColumn();
+	//
+	//for (uint32_t i = 0; i < Vertex::NV_DEBUG.size(); i++)
+	//	ImGui::Text(Vertex::NV_DEBUG[i].c_str());
 
 	ImGui::End();
 }

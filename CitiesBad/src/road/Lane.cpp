@@ -48,9 +48,9 @@ void Lane::Generate()
 
 	sss = 180.0f - glm::degrees(acos(sss));
 
-	uint32_t resolution = floor(sss / 10.0f);
-	if (resolution < 5)
-		resolution = 5;
+	uint32_t resolution = floor(sss / 5.0f);
+	if (resolution < 30)
+		resolution = 30;
 
 	float highestAngle = 1.0f;
 
@@ -120,14 +120,14 @@ void Lane::Generate()
 	AddDebugTriangle(glm::vec3(centerPoints.front().x, centerPoints.front().z, 0.0f), { 0.0f, 1.0f, 0.0f, 1.0f });
 	AddDebugTriangle(glm::vec3(centerPoints.back().x, centerPoints.back().z, 0.0f), { 0.0f, 1.0f, 0.0f, 1.0f });
 #else
-	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.front().x, centerPoints.front().z, 0.0f), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
-	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.back().x, centerPoints.back().z, 0.0f), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
+	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.front().x, 0.0f, centerPoints.front().z), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
+	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.back().x, 0.0f, centerPoints.back().z), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
 #endif
 
 	for (uint32_t i = 0; i < rightPoints.size(); i++)
 	{
 #ifndef HELP_ME
-		m_Vertices.push_back(Vertex(glm::vec3(rightPoints[i].x, rightPoints[i].y, 0.0f), glm::vec<4, float, glm::packed_mediump>(1.0f, 0.0f, 0.0f, 1.0f)));
+		m_Vertices.push_back(Vertex(glm::vec3(rightPoints[i].x, 0.0f, rightPoints[i].y), glm::vec<4, float, glm::packed_mediump>(1.0f, 0.0f, 0.0f, 1.0f)));
 #else
 		AddDebugTriangle(rightPoints[i], { 1.0f, 0.0f, 0.0f, 1.0f });
 #endif
@@ -136,7 +136,7 @@ void Lane::Generate()
 	for (uint32_t i = 0; i < leftPoints.size(); i++)
 	{
 #ifndef HELP_ME
-		m_Vertices.push_back(Vertex(glm::vec3(leftPoints[i].x, leftPoints[i].y, 0.0f), glm::vec<4, float, glm::packed_mediump>(0.0f, 0.0f, 1.0f, 1.0f)));
+		m_Vertices.push_back(Vertex(glm::vec3(leftPoints[i].x, 0.0f, leftPoints[i].y), glm::vec<4, float, glm::packed_mediump>(0.0f, 0.0f, 1.0f, 1.0f)));
 #else
 		AddDebugTriangle(leftPoints[i], { 0.0f, 0.0f, 1.0f, 1.0f });
 #endif

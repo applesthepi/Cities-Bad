@@ -8,7 +8,7 @@ class Camera
 public:
 	Camera(float fovRadians, float aspect, float nearZ, float farZ);
 
-	void SetRotation(glm::vec3 rotation);
+	void SetRotation(glm::vec2 rotation);
 	void SetPosition(glm::vec3 position);
 	void Translate(glm::vec3 position);
 	void TranslateForward(glm::vec3 position);
