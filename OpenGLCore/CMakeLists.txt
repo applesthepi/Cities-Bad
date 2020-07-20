@@ -31,12 +31,17 @@ set(OpenGLCore_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Events/MouseEvent.h"
 	
 	# ImGui
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiLayer.h"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_opengl3.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_glfw.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiLayer.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imstb_rectpack.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imstb_truetype.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_internal.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imstb_textedit.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/freetype/imgui_freetype.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/cpp/imgui_stdlib.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_opengl3.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imconfig.h"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_internal.h"
 	
 	# Util
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/OpenGLDebug.h"
@@ -55,32 +60,40 @@ set(OpenGLCore_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Core/Log.cpp"
 	
 	# ImGui
-	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiBuild.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiLayer.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_opengl3.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_glfw.cpp"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/cpp/imgui_stdlib.cpp"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/fonts/binary_to_compressed_c.cpp"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/freetype/imgui_freetype.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_demo.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_draw.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui.cpp"
-	
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_widgets.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiLayer.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiBuild.cpp"
 	# Util
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/OpenGLDebug.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/Shader.cpp"
+
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsWindow.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsInput.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsWindow.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsInput.h"
 	)
 		
 find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-#find_package(imgui CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+
 
 add_library(OpenGLCore STATIC
 	${OpenGLCore_SRC}
 )
 
 target_link_libraries(OpenGLCore PUBLIC
-	glad
+	glad::glad
 	glfw
+	spdlog::spdlog spdlog::spdlog_header_only
 	glm
-	spdlog
 )
 
 target_include_directories(OpenGLCore PUBLIC
@@ -91,28 +104,4 @@ target_precompile_headers(OpenGLCore PUBLIC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/glpch.h"
 )
 
-#find_path(CATCH_INCLUDE_DIR catch.hpp)
-#include_directories(${CATCH_INCLUDE_DIR})
-
-#target_include_directories(OpenGLCore PUBLIC
-#	glad
-#)
-#target_link_libraries(RHR PUBLIC
-#	Espresso
-#	Cappuccino
-#	sfml-graphics
-#	sfml-system
-#	sfml-window
-#	sfml-network
-#	${libtcc}
-#)
-#target_include_directories(RHR PUBLIC
-#	"${PROJECT_BINARY_DIR}"
-#	"${CMAKE_CURRENT_SOURCE_DIR}"
-#	"${CMAKE_CURRENT_SOURCE_DIR}/include"
-#	"${CMAKE_CURRENT_SOURCE_DIR}/include/RHR"
-#	"${CMAKE_SOURCE_DIR}/Espresso/include"
-#	${tcc_include}
-#)
-#
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/include FILES ${OpenGLCore_SRC})

@@ -5,8 +5,8 @@
 #include "GLCore/Events/MouseEvent.h"
 #include "GLCore/Events/KeyEvent.h"
 
-#include <GLFW/glfw3.h>
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 
 namespace GLCore {
 	
