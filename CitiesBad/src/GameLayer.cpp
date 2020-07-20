@@ -329,10 +329,10 @@ void GameLayer::OnAttach()
 	EnableGLDebugging();
 
 	m_Shader = Shader::FromGLSLTextFiles(
-		"assets/shaders/test.vert.glsl",
-		"assets/shaders/test.frag.glsl"
+		"res/shaders/test.vert.glsl",
+		"res/shaders/test.frag.glsl"
 	);
-
+	
 	// debug
 
 	//ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 5.0f, 0.0f, 1.0f });
@@ -519,8 +519,8 @@ void GameLayer::OnAttach()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
 
-	m_TexPixel = LoadTexture("assets/textures/pixel.png");
-	m_TexTest = LoadTexture("assets/textures/test.png");
+	m_TexPixel = LoadTexture("res/textures/pixel.png");
+	m_TexTest = LoadTexture("res/textures/test.png");
 }
 
 void GameLayer::OnDetach()
