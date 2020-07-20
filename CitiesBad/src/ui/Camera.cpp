@@ -2,10 +2,28 @@
 
 #include <numbers>
 
-Camera::Camera(float fovRadians, float aspect, float nearZ, float farZ)
-	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_NeedsVPUpdate(true), m_VP(glm::mat4(1.0f)),
-	m_Position(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraFront(glm::vec3(0.0f, 0.0f, 1.0f)) {}
+Camera::Camera(float fovRadians, float aspect, float nearZ, float farZ, float distance)
+	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_CameraDistance(distance), m_Lerp(0.0f), m_Lerping(false), m_NeedsVPUpdate(true), m_VP(glm::mat4(1.0f)),
+	m_LerpBegin(0.0f), m_LerpEnd(0.0f),
+	m_Position(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraForward(glm::vec3(0.0f, 0.0f, 1.0f)), m_LocationForward(glm::vec3(0.0f, 0.0f, 1.0f)) {}
 
+
+void Camera::FrameUpdate(Timestep ts)
+{
+	if (m_Lerping)
+	{
+		m_Lerp += ts * 10;
+
+		if (m_Lerp >= 1.0f)
+		{
+			m_Lerp = 1.0f;
+			m_Lerping = false;
+		}
+
+		m_CameraDistance = glm::mix(m_LerpEnd, m_LerpBegin, 1.0f - m_Lerp);
+		m_NeedsVPUpdate = true;
+	}
+}
 
 void Camera::SetRotation(glm::vec2 rotation)
 {
@@ -19,53 +37,23 @@ void Camera::SetRotation(glm::vec2 rotation)
 	else if (rotation.x > borderTop)
 		rotation.x = borderTop;
 
-	//if (rotation.y < 0.1f)
-	//	rotation.y = 0.1f;
-	//else if (rotation.y > pi - 0.1f)
-	//	rotation.y = pi - 0.1f;
-
-	rotation.y -= pi / 2.0f;
 	m_Rotation = glm::vec3(rotation.x, rotation.y, 0.0f);
-
-	m_CameraFront.x = cos(rotation.y) * cos(rotation.x);
-	m_CameraFront.z = sin(rotation.y) * cos(rotation.x);
-	m_CameraFront.y = sin(rotation.x);
-
 	m_NeedsVPUpdate = true;
-
-
-
-
-	//using std::numbers::pi;
-	//
-	//m_Rotation = rotation;
-	//m_CameraFront = glm::normalize(rotation);
-	//m_NeedsVPUpdate = true;
 }
 
 void Camera::SetPosition(glm::vec3 position)
 {
-	m_Position = position;
+	m_Position = { position.x, position.y, position.z };
+	m_NeedsVPUpdate = true;
+
+	m_Lerping = true;
 	m_NeedsVPUpdate = true;
 }
 
 void Camera::Translate(glm::vec3 position)
 {
-	m_Position += glm::vec3(-position.x, position.y, -position.z);
+	m_Position += glm::vec3(position.x, position.y, position.z);
 	m_NeedsVPUpdate = true;
-}
-
-void Camera::TranslateForward(glm::vec3 position)
-{
-	m_Position += position/* * m_Rotation*/;
-	m_NeedsVPUpdate = true;
-}
-
-void Camera::Rotate(glm::vec3 rotation)
-{
-	//m_Rotation = glm::normalize(rotation + m_Rotation);
-	//printf("%f, %f, %f\n", m_Rotation.x, m_Rotation.y, m_Rotation.z);
-	//m_NeedsVPUpdate = true;
 }
 
 void Camera::SetFOV(float radians)
@@ -87,19 +75,34 @@ void Camera::SetNearFar(float nearZ, float farZ)
 	m_NeedsVPUpdate = true;
 }
 
+void Camera::SetDistance(float distance)
+{
+	m_LerpBegin = m_CameraDistance;
+	m_LerpEnd = distance;
+	
+	m_Lerp = 0.0f;
+	m_Lerping = true;
+	m_NeedsVPUpdate = true;
+}
+
 glm::vec3 Camera::GetPosition()
 {
 	return m_Position;
 }
 
-glm::vec3 Camera::GetRotation()
+glm::vec2 Camera::GetRotation()
 {
 	return m_Rotation;
 }
 
-glm::vec3 Camera::GetForward()
+glm::vec3 Camera::GetCameraForward()
 {
-	return m_CameraFront;
+	return m_CameraForward;
+}
+
+glm::vec3 Camera::GetLocationForward()
+{
+	return m_LocationForward;
 }
 
 glm::mat4 Camera::ConstructMVP(glm::vec3 objectPosition, glm::vec3 objectRotation, glm::vec3 objectScale)
@@ -122,17 +125,39 @@ glm::mat4 Camera::ConstructMVP(glm::vec3 objectPosition, glm::vec3 objectRotatio
 
 void Camera::ConstructVP()
 {
-	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-
-	glm::mat4 projection = glm::perspective(glm::radians(90.0f), 16.0f / 9.0f, 0.1f, 10000.f);
-	glm::mat4 view = glm::lookAt(
-		glm::vec3(-m_Position.x, m_Position.y, -m_Position.z),
-		glm::vec3(-m_Position.x, m_Position.y, -m_Position.z) + m_CameraFront, cameraUp);
+	using std::numbers::pi;
 	
-	//view = glm::rotate(view, m_Rotation.x, glm::vec3(-1.0f, 0.0f, 0.0f));
-	//view = glm::rotate(view, m_Rotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
-	//view = glm::rotate(view, m_Rotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
-	//view = glm::translate(view, glm::vec3(-1.0f, -1.0f, 1.0f) * m_Position);
+	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec2 cameraRotation = m_Rotation;
 
+	m_CameraForward.x = cos(cameraRotation.y) * cos(cameraRotation.x);
+	m_CameraForward.z = sin(cameraRotation.y) * cos(cameraRotation.x);
+	m_CameraForward.y = sin(cameraRotation.x);
+
+	m_LocationForward.x = cos(cameraRotation.y);
+	m_LocationForward.z = sin(cameraRotation.y);
+
+	// pitch
+	float theta = m_Rotation.x + (pi / 2.0f);
+	// yaw
+	float phi = m_Rotation.y + (pi);
+
+	// camera position based on marker (target; imaginary) position
+	glm::vec3 cameraPosition = {
+		m_CameraDistance * sin(theta) * cos(phi),
+		m_CameraDistance * cos(theta),
+		m_CameraDistance * sin(theta) * sin(phi)
+	};
+
+	cameraPosition.x += m_Position.x;
+	cameraPosition.z += m_Position.z;
+
+	glm::mat4 projection = glm::perspective(m_FOV, m_Aspect, m_Near, m_Far);
+	glm::mat4 view = glm::lookAt(
+		cameraPosition,
+		cameraPosition + m_CameraForward,
+		cameraUp
+	);
+	
 	m_VP = projection * view;
 }

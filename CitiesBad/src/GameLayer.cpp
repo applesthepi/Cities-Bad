@@ -3,6 +3,7 @@
 
 #include <stb_image/stb_image.h>
 #include <GLCore/Core/KeyCodes.h>
+#include <GLCore/Core/MouseButtonCodes.h>
 #include <numbers>
 
 
@@ -164,11 +165,29 @@ void runDecode()
 using namespace GLCore;
 using namespace GLCore::Utils;
 
-GameLayer::GameLayer()
-	:m_Camera(glm::radians(70.0f), 16.0f / 9.0f, 0.1f, 10000.0f)
+static float cameraDistance = 0.0f;
+static int16_t zoomIndex = 13;
+
+void updateCameraDistance(Camera* camera)
 {
-	m_Camera.SetPosition({ -2.0f, 1.0f, -2.0f });
-	m_Camera.SetRotation({ 0.0f, 0.0f });
+	if (zoomIndex < 7)
+		zoomIndex = 7;
+	else if (zoomIndex > 20)
+		zoomIndex = 20;
+
+	cameraDistance = pow(zoomIndex, 5.0f) / 100000.0f;
+	camera->SetDistance(cameraDistance);
+}
+
+GameLayer::GameLayer()
+	:m_Camera(glm::radians(70.0f), 16.0f / 9.0f, 0.01f, 10000.0f, cameraDistance)
+{
+	using std::numbers::pi;
+
+	updateCameraDistance(&m_Camera);
+
+	m_Camera.SetPosition({ 1.5f, 0.0f, 1.5f });
+	m_Camera.SetRotation({ pi / -4.0f, 0.0f });
 }
 
 GameLayer::~GameLayer()
@@ -527,8 +546,10 @@ static bool rotXU = false;
 static bool rotYD = false;
 static bool rotYU = false;
 
-static float mouseMiddleX = 0.0f;
-static float mouseMiddleY = 0.0f;
+static bool mouseDragging = false;
+static glm::vec2 mousePosition = { 0.0f, 0.0f };
+static glm::vec2 mouseBegin = { 0.0f, 0.0f };
+static glm::vec2 rotationBegin = { 0.0f, 0.0f };
 
 void GameLayer::OnEvent(Event& event)
 {
@@ -600,8 +621,39 @@ void GameLayer::OnEvent(Event& event)
 	dispatcher.Dispatch<MouseMovedEvent>(
 		[&](MouseMovedEvent& e)
 		{
-			mouseMiddleX = (e.GetX() - (1920.0f / 2.0f));
-			mouseMiddleY = ((1080.0f / 2.0f) - e.GetY());
+			mousePosition = { e.GetX(), e.GetY() };
+
+			return false;
+		});
+	dispatcher.Dispatch<MouseButtonPressedEvent>(
+		[&](MouseButtonPressedEvent& e)
+		{
+			if (e.GetMouseButton() == HZ_MOUSE_BUTTON_3)
+			{
+				mouseDragging = true;
+				mouseBegin = mousePosition;
+				rotationBegin = m_Camera.GetRotation();
+			}
+
+			return false;
+		});
+	dispatcher.Dispatch<MouseButtonReleasedEvent>(
+		[&](MouseButtonReleasedEvent& e)
+		{
+			if (e.GetMouseButton() == HZ_MOUSE_BUTTON_3)
+			{
+				mouseDragging = false;
+				mouseBegin = { 0.0f, 0.0f };
+				rotationBegin = { 0.0f, 0.0f };
+			}
+
+			return false;
+		});
+	dispatcher.Dispatch<MouseScrolledEvent>(
+		[&](MouseScrolledEvent& e)
+		{
+			zoomIndex -= e.GetYOffset();
+			updateCameraDistance(&m_Camera);
 
 			return false;
 		});
@@ -646,79 +698,31 @@ float camRot[3] = { 0.0f, 0.0f, 0.0f };
 //	glUniformMatrix4fv(locationMVP, 1, GL_FALSE, glm::value_ptr(MVP));
 //}
 
+static float movSpeed = 0.0f;
+static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+
 void GameLayer::OnUpdate(Timestep ts)
 {
 	using std::numbers::pi;
 
-	//if (rotXD)
-	//	m_Camera.Rotate(glm::vec3(ts * 1.0f, 0.0f, 0.0f));
-	//if (rotXU)
-	//	m_Camera.Rotate(glm::vec3(ts * -1.0f, 0.0f, 0.0f));
-	//if (rotYD)
-	//	m_Camera.Rotate(glm::vec3(0.0f, ts * -1.0f, 0.0f));
-	//if (rotYU)
-	//	m_Camera.Rotate(glm::vec3(0.0f, ts * 1.0f, 0.0f));
-	
-	glm::vec3 direction = glm::vec3(0.0f, 0.0f, 0.0f);
-	//direction.x = cos(glm::radians(mouseMiddleX));
-	//direction.y = sin(glm::radians(mouseMiddleY));
-	//direction.z = sin(glm::radians(mouseMiddleX));
-
-	//direction.x = mouseMiddleX;
-	//direction.y = mouseMiddleY;
-
-	direction.x = mouseMiddleY;
-	//direction.z = mouseMiddleX;
-
-	//m_Camera.SetRotation(direction);
-
-	//glm::vec3 upV = glm::vec3(1.0f, 0.0f, 0.0f);
-	//float somethingS = glm::dot(m_Camera.GetRotation(), upV);
-
-	//printf("%f, %f, %f\n", glm::normalize(m_Camera.GetRotation()).x, glm::normalize(m_Camera.GetRotation()).y, glm::normalize(m_Camera.GetRotation()).z);
-
-	float movSpeed = ts * 5.0f;
-
-	//glm::vec3 movementChange = glm::vec3(0.0f, 0.0f, 0.0f);
-
-	//if (movLeft)
-	//	movementChange.x += 5.0f;
-	//if (movRight)
-	//	movementChange.x += -5.0f;
-	//if (movForwards)
-	//	movementChange.z += 5.0f;
-	//if (movBackwards)
-	//	movementChange.z += -5.0f;
-	//if (movUp)
-	//	movementChange.y += -5.0f;
-	//if (movDown)
-	//	movementChange.y += 5.0f;
-
-	glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+	m_Camera.FrameUpdate(ts);
+	movSpeed = ts * cameraDistance * 1.5f;
 
 	if (movForwards)
-		m_Camera.Translate(movSpeed * m_Camera.GetForward());
+		m_Camera.Translate(movSpeed * m_Camera.GetLocationForward());
 	if (movBackwards)
-		m_Camera.Translate(-movSpeed * m_Camera.GetForward());
+		m_Camera.Translate(-movSpeed * m_Camera.GetLocationForward());
 	if (movLeft)
-		m_Camera.Translate(-movSpeed * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
+		m_Camera.Translate(-movSpeed * glm::normalize(glm::cross(m_Camera.GetLocationForward(), cameraUp)));
 	if (movRight)
-		m_Camera.Translate(movSpeed * glm::normalize(glm::cross(m_Camera.GetForward(), cameraUp)));
+		m_Camera.Translate(movSpeed * glm::normalize(glm::cross(m_Camera.GetLocationForward(), cameraUp)));
 
-	m_Camera.SetRotation({ mouseMiddleY / 150.0f, mouseMiddleX / 150.0f });
+	if (mouseDragging)
+		m_Camera.SetRotation({
+			rotationBegin.x + ((mouseBegin.y - mousePosition.y) / 100.0f),
+			rotationBegin.y + ((mouseBegin.x - mousePosition.x) / -100.0f)
+		});
 
-	//if (movUp)
-	//	m_Camera.TranslateForward(movSpeed * glm::vec3(0.0f, -1.0f, 0.0f) * m_Camera.GetForward());
-	//if (movDown)
-	//	m_Camera.TranslateForward(movSpeed * glm::vec3(0.0f, 1.0f, 0.0f) * m_Camera.GetForward());
-
-	//printf("%f, %f, %f\n", movementChange.x, movementChange.y, movementChange.z);
-	//m_Camera.SetPosition({ 0.0f, 0.0f, 0.0f });
-	//m_Camera.TranslateForward(movSpeed * glm::vec3() * m_Camera.GetForward());
-
-	//m_Camera.SetPosition({ camPos[0], camPos[1], camPos[2] });
-	//m_Camera.SetRotation({ camRot[0], camRot[1], camRot[2] });
-	
 	glUseProgram(m_Shader->GetRendererID());
 
 	auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
