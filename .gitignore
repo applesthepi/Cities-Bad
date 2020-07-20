@@ -2,12 +2,5 @@
 *.html
 bin-int
 bin
-dep
-CitiesBad/avcodec-58.dll
-CitiesBad/avdevice-58.dll
-CitiesBad/avfilter-7.dll
-CitiesBad/avformat-58.dll
-CitiesBad/avutil-56.dll
-CitiesBad/postproc-55.dll
-CitiesBad/swresample-3.dll
-CitiesBad/swscale-5.dll
+build
+OpenGLCore/vendor
