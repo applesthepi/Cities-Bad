@@ -235,8 +235,8 @@ std::pair<glm::vec2, glm::vec2> Lane::GenerateExterior(glm::vec2 a, glm::vec2 b,
 {
 	glm::vec2 resLeft, resRight;
 
-	bool useHor = abs(a.y - c.y) < 0.01;
-	bool useVer = abs(a.x - c.x) < 0.01;
+	bool useHor = std::abs(a.y - c.y) < 0.01;
+	bool useVer = std::abs(a.x - c.x) < 0.01;
 
 	if (useHor)
 	{
@@ -292,7 +292,7 @@ std::pair<glm::vec2, glm::vec2> Lane::GenerateExterior(glm::vec2 a, glm::vec2 b,
 	{
 		// abs this for ribbon
 #ifdef RIBBON_ME
-		float slopeInv = abs((a.x - c.x) / (a.y - c.y) * -1.0f);
+		float slopeInv = std::abs((a.x - c.x) / (a.y - c.y) * -1.0f);
 #else
 		float slopeInv = (a.x - c.x) / (a.y - c.y) * -1.0f;
 #endif
@@ -339,8 +339,8 @@ std::pair<glm::vec2, glm::vec2> Lane::GenerateExteriorCorner(glm::vec2 a, glm::v
 {
 	glm::vec2 resLeft, resRight;
 
-	bool useHor = abs(a.y - b.y) < 0.01;
-	bool useVer = abs(a.x - b.x) < 0.01;
+	bool useHor = std::abs(a.y - b.y) < 0.01;
+	bool useVer = std::abs(a.x - b.x) < 0.01;
 
 	if (useHor)
 	{
@@ -396,7 +396,7 @@ std::pair<glm::vec2, glm::vec2> Lane::GenerateExteriorCorner(glm::vec2 a, glm::v
 	{
 		// abs this for ribbon
 #ifdef RIBBON_ME
-		float slopeInv = abs((a.x - b.x) / (a.y - b.y) * -1.0f);
+		float slopeInv = std::abs((a.x - b.x) / (a.y - b.y) * -1.0f);
 #else
 		float slopeInv = (a.x - b.x) / (a.y - b.y) * -1.0f;
 #endif
