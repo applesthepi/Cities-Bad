@@ -34,6 +34,9 @@ set(OpenGLCore_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiLayer.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_opengl3.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_glfw.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imconfig.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_internal.h"
 	
 	# Util
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/OpenGLDebug.h"
@@ -52,10 +55,11 @@ set(OpenGLCore_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Core/Log.cpp"
 	
 	# ImGui
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiBuild.cpp"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiBuild.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/ImGuiLayer.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_opengl3.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_impl_glfw.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui.cpp"
 	
 	# Util
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/OpenGLDebug.cpp"
@@ -65,7 +69,7 @@ set(OpenGLCore_SRC
 find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
+#find_package(imgui CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 add_library(OpenGLCore STATIC
@@ -76,7 +80,6 @@ target_link_libraries(OpenGLCore PUBLIC
 	glad
 	glfw
 	glm
-	imgui
 	spdlog
 )
 
