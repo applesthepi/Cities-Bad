@@ -322,6 +322,11 @@ GLuint cubeVA, cubeVB, cubeIB;
 GLuint cube2VA, cube2VB, cube2IB;
 
 static Terrain* terrain;
+static Shader* depthShader;
+
+uint32_t depthBufferFB;
+uint32_t depthBufferTexture;
+const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
 void GameLayer::OnAttach()
 {
@@ -330,6 +335,11 @@ void GameLayer::OnAttach()
 	// setup
 
 	EnableGLDebugging();
+
+	depthShader = Shader::FromGLSLTextFiles(
+		"res/shaders/depth.vert.glsl",
+		"res/shaders/depth.frag.glsl"
+	);
 
 	m_Shader = Shader::FromGLSLTextFiles(
 		"res/shaders/test.vert.glsl",
@@ -520,10 +530,14 @@ void GameLayer::OnAttach()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
 
-	terrain = new Terrain({ 1200, 1200 }, 0.05f);
+	terrain = new Terrain({ 100, 100 }, 0.05f);
 
 	m_TexPixel = LoadTexture("res/textures/pixel.png");
 	m_TexTest = LoadTexture("res/textures/test.png");
+
+	
+
+
 }
 
 void GameLayer::OnDetach()
@@ -705,13 +719,48 @@ float camRot[3] = { 0.0f, 0.0f, 0.0f };
 static float movSpeed = 0.0f;
 static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
+void renderScene(Camera& camera, Timestep ts)
+{
+	float near_plane = 0.0f, far_plane = 20.0f;
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
+	
+	glm::mat4 lightView = glm::lookAt(
+		glm::vec3(-1.0f, 3.0f, -1.0f),
+		glm::vec3(5.0f, 0.0f, 5.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f));
+	
+	glm::mat4 lightSpaceMatrix = lightProjection * lightView * glm::mat4(1.0f);
+	
+	// Render Depth Buffer
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glUseProgram(depthShader->GetRendererID());
+	glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+	
+	glBindFramebuffer(GL_FRAMEBUFFER, depthBufferFB);
+	terrain->Render(camera, ts, depthShader);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	// Full Render
+
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	glViewport(0, 0, 1920, 1080);
+	
+	terrain->Render(camera, ts);
+}
+
 void GameLayer::OnUpdate(Timestep ts)
 {
 	using std::numbers::pi;
 
 	m_Camera.FrameUpdate(ts);
 	movSpeed = ts * cameraDistance * 1.5f;
-
+	
 	if (movForwards)
 		m_Camera.Translate(movSpeed * m_Camera.GetLocationForward());
 	if (movBackwards)
@@ -720,66 +769,87 @@ void GameLayer::OnUpdate(Timestep ts)
 		m_Camera.Translate(-movSpeed * glm::normalize(glm::cross(m_Camera.GetLocationForward(), cameraUp)));
 	if (movRight)
 		m_Camera.Translate(movSpeed * glm::normalize(glm::cross(m_Camera.GetLocationForward(), cameraUp)));
-
+	
 	if (mouseDragging)
+	{
 		m_Camera.SetRotation({
 			rotationBegin.x + ((mouseBegin.y - mousePosition.y) / 100.0f),
 			rotationBegin.y + ((mouseBegin.x - mousePosition.x) / -100.0f)
-		});
-
-	glUseProgram(m_Shader->GetRendererID());
-
-	auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
-	int samplers[2] = { 0, 1 };
-	glUniform1iv(loc, 2, samplers);
-
-	glBindVertexArray(lnVA);
-
-	if (lnPos0[0] != lnLPos0[0] || lnPos0[1] != lnLPos0[1] ||
-		lnPos1[0] != lnLPos1[0] || lnPos1[1] != lnLPos1[1] ||
-		lnBez[0] != lnLBez[0] || lnBez[1] != lnLBez[1])
-	{
-		lnLPos0[0] = lnPos0[0];
-		lnLPos0[1] = lnPos0[1];
-
-		lnLPos1[0] = lnPos1[0];
-		lnLPos1[1] = lnPos1[1];
-
-		lnLBez[0] = lnBez[0];
-		lnLBez[1] = lnBez[1];
-
-		ln.SetPosition({ lnPos0[0], 0.0f, lnPos0[1] }, { lnPos1[0], 1.0f, lnPos1[1] });
-		ln.SetBezier({ lnBez[0], lnBez[1] });
-		ln.Generate();
-
-		//glDeleteBuffers(1, &lnVB);
-		//glDeleteBuffers(1, &lnIB);
-
-		//glGenBuffers(GL_ARRAY_BUFFER, &lnVB);
-		glBindBuffer(GL_ARRAY_BUFFER, lnVB);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * lnVertices->size(), lnVertices->data(), GL_STATIC_DRAW);
-
-		//glGenBuffers(GL_ELEMENT_ARRAY_BUFFER, &lnIB);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lnIB);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * lnIndices->size(), lnIndices->data(), GL_STATIC_DRAW);
+			});
 	}
+	
+	//glUseProgram(m_Shader->GetRendererID());
+	//
+	//auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
+	//int samplers[2] = { 0, 1 };
+	//glUniform1iv(loc, 2, samplers);
+	//
+	//glBindVertexArray(lnVA);
+	//
+	//if (lnPos0[0] != lnLPos0[0] || lnPos0[1] != lnLPos0[1] ||
+	//	lnPos1[0] != lnLPos1[0] || lnPos1[1] != lnLPos1[1] ||
+	//	lnBez[0] != lnLBez[0] || lnBez[1] != lnLBez[1])
+	//{
+	//	lnLPos0[0] = lnPos0[0];
+	//	lnLPos0[1] = lnPos0[1];
+	//
+	//	lnLPos1[0] = lnPos1[0];
+	//	lnLPos1[1] = lnPos1[1];
+	//
+	//	lnLBez[0] = lnBez[0];
+	//	lnLBez[1] = lnBez[1];
+	//
+	//	ln.SetPosition({ lnPos0[0], 0.0f, lnPos0[1] }, { lnPos1[0], 1.0f, lnPos1[1] });
+	//	ln.SetBezier({ lnBez[0], lnBez[1] });
+	//	ln.Generate();
+	//
+	//	//glDeleteBuffers(1, &lnVB);
+	//	//glDeleteBuffers(1, &lnIB);
+	//
+	//	//glGenBuffers(GL_ARRAY_BUFFER, &lnVB);
+	//	glBindBuffer(GL_ARRAY_BUFFER, lnVB);
+	//	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * lnVertices->size(), lnVertices->data(), GL_STATIC_DRAW);
+	//
+	//	//glGenBuffers(GL_ELEMENT_ARRAY_BUFFER, &lnIB);
+	//	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lnIB);
+	//	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * lnIndices->size(), lnIndices->data(), GL_STATIC_DRAW);
+	//}
 
-	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+	//glBindFramebuffer(GL_FRAMEBUFFER, depthBufferFB);
+	//
+	//glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//
+	//renderScene(m_Camera, ts);
+	//
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glViewport(0, 0, 1920, 1080);
+	//
+	//glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//
+	//glBindFramebuffer(GL_TEXTURE_2D, depthBufferTexture);
+	//
+	//renderScene(m_Camera, ts);
 
-	glBindTextureUnit(0, m_TexPixel);
-	glBindTextureUnit(1, m_TexTest);
 
-	int location = 0;
 
-	location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
-	glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
+	renderScene(m_Camera, ts);
 
-	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
-		glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
-		glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
-		glm::vec3(1.0f, 1.0f, 1.0f)
-	)));
+	//glBindTextureUnit(0, m_TexPixel);
+	//glBindTextureUnit(1, m_TexTest);
+
+	//int location = 0;
+	//
+	//location = glGetUniformLocation(m_Shader->GetRendererID(), "u_Color");
+	//glUniform4fv(location, 1, glm::value_ptr(GeneralColor));
+	//
+	//glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(m_Camera.ConstructMVP(
+	//	glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
+	//	glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
+	//	glm::vec3(1.0f, 1.0f, 1.0f)
+	//)));
 	
 	//glBindVertexArray(lnVA);
 	//glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
@@ -808,7 +878,7 @@ void GameLayer::OnUpdate(Timestep ts)
 	//glBindVertexArray(cube2VA);
 	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
-	terrain->Render(m_Camera, ts);
+	//terrain->Render(m_Camera, ts);
 }
 
 void GameLayer::OnImGuiRender()

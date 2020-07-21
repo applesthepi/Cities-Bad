@@ -3,7 +3,8 @@
 #include <numbers>
 
 Camera::Camera(float fovRadians, float aspect, float nearZ, float farZ, float distance)
-	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_CameraDistance(distance), m_Lerp(0.0f), m_Lerping(false), m_NeedsVPUpdate(true), m_VP(glm::mat4(1.0f)),
+	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_CameraDistance(distance), m_Lerp(0.0f), m_Lerping(false), m_NeedsVPUpdate(true),
+	m_View(glm::mat4(1.0f)), m_Projection(glm::mat4(1.0f)),
 	m_LerpBegin(0.0f), m_LerpEnd(0.0f),
 	m_Position(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraForward(glm::vec3(0.0f, 0.0f, 1.0f)), m_LocationForward(glm::vec3(0.0f, 0.0f, 1.0f)) {}
 
@@ -105,6 +106,28 @@ glm::vec3 Camera::GetLocationForward()
 	return m_LocationForward;
 }
 
+glm::mat4 Camera::GetView()
+{
+	if (m_NeedsVPUpdate)
+	{
+		m_NeedsVPUpdate = false;
+		ConstructVP();
+	}
+
+	return m_View;
+}
+
+glm::mat4 Camera::GetProjection()
+{
+	if (m_NeedsVPUpdate)
+	{
+		m_NeedsVPUpdate = false;
+		ConstructVP();
+	}
+
+	return m_Projection;
+}
+
 glm::mat4 Camera::ConstructMVP(glm::vec3 objectPosition, glm::vec3 objectRotation, glm::vec3 objectScale)
 {
 	if (m_NeedsVPUpdate)
@@ -120,7 +143,19 @@ glm::mat4 Camera::ConstructMVP(glm::vec3 objectPosition, glm::vec3 objectRotatio
 	model = glm::rotate(model, objectRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
 	model = glm::rotate(model, objectRotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
 
-	return m_VP * model;
+	return m_Projection * m_View * model;
+}
+
+glm::mat4 Camera::ConstructModel(glm::vec3 objectPosition, glm::vec3 objectRotation, glm::vec3 objectScale)
+{
+	glm::mat4 model = glm::mat4(1.0f);
+
+	model = glm::translate(model, glm::vec3(1.0f, 1.0f, -1.0f) * objectPosition);
+	model = glm::rotate(model, objectRotation.x, glm::vec3(1.0f, 0.0f, 0.0f));
+	model = glm::rotate(model, objectRotation.y, glm::vec3(0.0f, 1.0f, 0.0f));
+	model = glm::rotate(model, objectRotation.z, glm::vec3(0.0f, 0.0f, 1.0f));
+
+	return model;
 }
 
 void Camera::ConstructVP()
@@ -152,12 +187,10 @@ void Camera::ConstructVP()
 	cameraPosition.x += m_Position.x;
 	cameraPosition.z += m_Position.z;
 
-	glm::mat4 projection = glm::perspective(m_FOV, m_Aspect, m_Near, m_Far);
-	glm::mat4 view = glm::lookAt(
+	m_Projection = glm::perspective(m_FOV, m_Aspect, m_Near, m_Far);
+	m_View = glm::lookAt(
 		cameraPosition,
 		cameraPosition + m_CameraForward,
 		cameraUp
 	);
-	
-	m_VP = projection * view;
 }

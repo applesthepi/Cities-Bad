@@ -9,13 +9,14 @@ using namespace noise;
 struct TerrainVertex
 {
 	TerrainVertex()
-		:Position({ 0.0f, 0.0f, 0.0f }), Color({ 1.0f, 1.0f, 1.0f, 1.0f }) {}
+		:Position({ 0.0f, 0.0f, 0.0f }), Color({ 1.0f, 1.0f, 1.0f, 1.0f }), Normal({ 0.0f, 1.0f, 0.0f }) {}
 
 	TerrainVertex(glm::vec3 position, glm::vec4 color)
-		:Position(position), Color(color) {}
+		:Position(position), Color(color), Normal({ 0.0f, 1.0f, 0.0f }) {}
 
 	glm::vec3 Position;
 	glm::vec4 Color;
+	glm::vec3 Normal;
 };
 
 static size_t terrainCellSize = sizeof(TerrainVertex) * 4;
@@ -96,6 +97,9 @@ Terrain::Terrain(glm::vec<2, uint32_t> size, float cellSize)
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Color));
 
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Normal));
+
 	glCreateBuffers(1, &m_IB);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6 * (m_Size.x - 1) * (m_Size.y - 1), indices, GL_STATIC_DRAW);
@@ -123,12 +127,47 @@ void Terrain::Render(Camera& camera, Timestep ts)
 
 	glUseProgram(m_Shader->GetRendererID());
 
-	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(camera.ConstructMVP(
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::vec3(1.0f, 1.0f, 1.0f)
-	)));
+	glBindBuffer(GL_ARRAY_BUFFER, m_VB);
 
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Position));
+
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Color));
+
+	glEnableVertexAttribArray(2);
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Normal));
+
+	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_Projection"), 1, GL_FALSE, glm::value_ptr(camera.GetProjection()));
+	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_View"), 1, GL_FALSE, glm::value_ptr(camera.GetView()));
+	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_Model"), 1, GL_FALSE, glm::value_ptr(camera.ConstructModel(
+		{ 0.0f, 0.0f, 0.0f },
+		{ 0.0f, 0.0f, 0.0f },
+		{ 1.0f, 1.0f, 1.0f }
+	)));
+	glUniform4f(glGetUniformLocation(m_Shader->GetRendererID(), "u_Color"), 1.0f, 1.0f, 1.0f, 1.0f);
+	glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightDirection"), 0.5f, 0.3f, 0.5f);
+	glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightColor"), 1.0f, 1.0f, 0.8f);
+
+	RenderSelf(camera, ts);
+}
+
+void Terrain::Render(Camera& camera, Timestep ts, Shader* shader)
+{
+	if (!m_Setup)
+		return;
+
+	glUseProgram(shader->GetRendererID());
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_VB);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Position));
+
+	RenderSelf(camera, ts);
+}
+
+void Terrain::RenderSelf(Camera& camera, Timestep ts)
+{
 	glBindVertexArray(m_VA);
 	glDrawElements(GL_TRIANGLES, 6 * (m_Size.x - 1) * (m_Size.y - 1), GL_UNSIGNED_INT, nullptr);
 }
@@ -167,10 +206,44 @@ void Terrain::BufferDefault()
 		);
 
 		glm::vec3 thisColor = colorBase + (static_cast<float>(perlinTip) * colorTip) + (static_cast<float>(perlinThick) * colorThick) - static_cast<float>(perlinGrass + perlinGrassLow);
-		
-		TerrainVertex vertex = TerrainVertex(offset, glm::vec4(thisColor, 1.0f));
+		TerrainVertex vertex = TerrainVertex(offset, glm::vec4(colorBase, 1.0f));
 
-		memcpy(m_Buffer + (i * 7), &vertex, sizeof(TerrainVertex));
+		memcpy(m_Buffer + (i * (sizeof(TerrainVertex) / sizeof(float))), &vertex, sizeof(TerrainVertex));
+	}
+
+	for (uint64_t y = 0; y < (m_Size.y - 1); y++)
+	{
+		for (uint64_t x = 0; x < (m_Size.x - 1); x++)
+		{
+			uint64_t vtile = ((y * m_Size.x) + x);
+
+			glm::vec3 side1 = {
+				m_Buffer[(vtile + m_Size.x) * (sizeof(TerrainVertex) / sizeof(float))],
+				m_Buffer[(vtile + m_Size.x) * (sizeof(TerrainVertex) / sizeof(float)) + 1],
+				m_Buffer[(vtile + m_Size.x) * (sizeof(TerrainVertex) / sizeof(float)) + 2]
+			};
+
+			glm::vec3 side2 = {
+				m_Buffer[(vtile + m_Size.x + 1) * (sizeof(TerrainVertex) / sizeof(float))],
+				m_Buffer[(vtile + m_Size.x + 1) * (sizeof(TerrainVertex) / sizeof(float)) + 1],
+				m_Buffer[(vtile + m_Size.x + 1) * (sizeof(TerrainVertex) / sizeof(float)) + 2]
+			};
+
+			side1 -= glm::vec3(
+				m_Buffer[(vtile) * (sizeof(TerrainVertex) / sizeof(float))],
+				m_Buffer[(vtile) * (sizeof(TerrainVertex) / sizeof(float)) + 1],
+				m_Buffer[(vtile) * (sizeof(TerrainVertex) / sizeof(float)) + 2]
+			);
+
+			side2 -= glm::vec3(
+				m_Buffer[(vtile) * (sizeof(TerrainVertex) / sizeof(float))],
+				m_Buffer[(vtile) * (sizeof(TerrainVertex) / sizeof(float)) + 1],
+				m_Buffer[(vtile) * (sizeof(TerrainVertex) / sizeof(float)) + 2]
+			);
+
+			glm::vec3 normal = glm::cross(side1, side2);
+			memcpy(m_Buffer + (vtile * (sizeof(TerrainVertex) / sizeof(float))) + 7, &normal, sizeof(glm::vec3));
+		}
 	}
 }
 

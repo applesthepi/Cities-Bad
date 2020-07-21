@@ -14,7 +14,10 @@ public:
 	~Terrain();
 
 	void Render(Camera& camera, Timestep ts);
+	void Render(Camera& camera, Timestep ts, Shader* shader);
 private:
+	void RenderSelf(Camera& camera, Timestep ts);
+
 	void BufferDefault();
 	void BufferPosition(glm::vec<2, uint32_t> vertex, glm::vec3 position);
 	void BufferColor(glm::vec<2, uint32_t> vertex, glm::vec4 color);

@@ -26,8 +26,11 @@ public:
 	glm::vec3 GetCameraForward();
 	// forward normal for the virtual location (on map)
 	glm::vec3 GetLocationForward();
+	glm::mat4 GetView();
+	glm::mat4 GetProjection();
 
 	glm::mat4 ConstructMVP(glm::vec3 objectPosition, glm::vec3 objectRotation, glm::vec3 objectScale);
+	glm::mat4 ConstructModel(glm::vec3 objectPosition, glm::vec3 objectRotation, glm::vec3 objectScale);
 private:
 	void ConstructVP();
 
@@ -39,7 +42,7 @@ private:
 
 	bool m_Lerping;
 	bool m_NeedsVPUpdate;
-	glm::mat4 m_VP;
+	glm::mat4 m_View, m_Projection;
 
 	float m_LerpBegin, m_LerpEnd;
 	glm::vec3 m_Position;
