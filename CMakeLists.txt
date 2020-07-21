@@ -38,6 +38,10 @@ set(CitiesBad_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/road/ClipGroup.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/road/Lane.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/road/Vertex.h"
+	
+	# Terrain
+	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/terrain/Terrain.h"
+	
 	# ==================================================================================
 	# =============================================================== Source
 	# ==================================================================================
@@ -52,13 +56,63 @@ set(CitiesBad_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/road/ClipGroup.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/road/Lane.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/road/Vertex.cpp"
+	
+	# Terrain
+	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/terrain/Terrain.cpp"
+	
+	# Noise
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/basictypes.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/exception.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/interp.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/latlon.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/mathconsts.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/misc.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/noisegen.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/noiseutils.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/vectortable.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/cylinder.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/line.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/model.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/plane.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/sphere.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/abs.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/add.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/billow.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/blend.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/cache.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/checkerboard.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/clamp.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/const.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/curve.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/cylinders.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/displace.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/exponent.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/invert.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/max.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/min.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/module.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/modulebase.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/multiply.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/perlin.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/power.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/ridgedmulti.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/rotatepoint.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/scalebias.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/scalepoint.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/select.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/spheres.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/terrace.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/translatepoint.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/turbulence.h"
+	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/voronoi.h"
 	)
+
 add_executable(citiesbad
 	${CitiesBad_SRC}
 	)
 # Preserve folders in visual studio structure
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src FILES ${CitiesBad_SRC})
-
+add_compile_definitions(NOISE_STATIC)
 configure_file(config.h.in config.h)
 
 set_property(TARGET citiesbad PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/Debug")
@@ -67,14 +121,23 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT c
 
 add_subdirectory(OpenGLCore)
 find_path(STB_INCLUDE_DIRS stb.h)
+find_path(NOISE_INCLUDE_DIR NAMES noise/noise.h)
+
+find_library(NOISE_LIBRARY NAMES noise-static)
+find_library(NOISE_UTILS_LIBRARY NAMES noiseutils-static)
 
 target_link_libraries(citiesbad PUBLIC
 	OpenGLCore
+	${NOISE_LIBRARY}
+	${NOISE_UTILS_LIBRARY}
 	)
 	
 target_include_directories(citiesbad PUBLIC
 	"OpenGLCore"
 	"OpenGLCore/include"
+	"CitiesBad"
+	"CitiesBad/src"
+	${NOISE_INCLUDE_DIR}
 	${STB_INCLUDE_DIRS}
 	)
 

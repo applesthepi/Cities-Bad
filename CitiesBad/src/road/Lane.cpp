@@ -67,20 +67,29 @@ void Lane::Generate()
 			2 * (1.0f - t) * (t * m_B.y)
 		) + (glm::vec3(t2) * m_P2);
 
-		point.y = std::lerp(m_P1.y, m_P2.y, static_cast<float>(t));
+		point.y = glm::mix(m_P1.y, m_P2.y, static_cast<float>(t));
 		centerPoints.push_back(point);
 	}
 
-	std::vector<glm::vec2> leftPoints;
-	std::vector<glm::vec2> rightPoints;
+	std::vector<glm::vec3> leftPoints;
+	std::vector<glm::vec3> rightPoints;
 
 	{
 		std::pair<glm::vec2, glm::vec2> result = GenerateExteriorCorner(
 			glm::vec2(centerPoints[1].x, centerPoints[1].z),
 			glm::vec2(centerPoints[0].x, centerPoints[0].z));
 
-		leftPoints.push_back(result.first);
-		rightPoints.push_back(result.second);
+		leftPoints.push_back({
+			result.first.x,
+			centerPoints.front().y,
+			result.first.y
+		});
+
+		rightPoints.push_back({
+			result.second.x,
+			centerPoints.front().y,
+			result.second.y
+		});
 	}
 
 	for (uint32_t i = 1; i < centerPoints.size() - 1; i++)
@@ -90,8 +99,17 @@ void Lane::Generate()
 			glm::vec2(centerPoints[i].x, centerPoints[i].z),
 			glm::vec2(centerPoints[i + 1].x, centerPoints[i + 1].z));
 
-		leftPoints.push_back(result.first);
-		rightPoints.push_back(result.second);
+		leftPoints.push_back({
+			result.first.x,
+			centerPoints[i].y,
+			result.first.y
+		});
+
+		rightPoints.push_back({
+			result.second.x,
+			centerPoints[i].y,
+			result.second.y
+		});
 	}
 
 	{
@@ -101,8 +119,17 @@ void Lane::Generate()
 			glm::vec2(centerPoints[centerPoints.size() - 2].x, centerPoints[centerPoints.size() - 2].z),
 			glm::vec2(centerPoints[centerPoints.size() - 1].x, centerPoints[centerPoints.size() - 1].z));
 
-		leftPoints.push_back(result.second);
-		rightPoints.push_back(result.first);
+		leftPoints.push_back({
+			result.second.x,
+			centerPoints.back().y,
+			result.second.y
+			});
+
+		rightPoints.push_back({
+			result.first.x,
+			centerPoints.back().y,
+			result.first.y
+			});
 	}
 
 	m_Vertices.clear();
@@ -120,14 +147,14 @@ void Lane::Generate()
 	AddDebugTriangle(glm::vec3(centerPoints.front().x, centerPoints.front().z, 0.0f), { 0.0f, 1.0f, 0.0f, 1.0f });
 	AddDebugTriangle(glm::vec3(centerPoints.back().x, centerPoints.back().z, 0.0f), { 0.0f, 1.0f, 0.0f, 1.0f });
 #else
-	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.front().x, 0.0f, centerPoints.front().z), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
-	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.back().x, 0.0f, centerPoints.back().z), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
+	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.front().x, centerPoints.front().y, centerPoints.front().z), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
+	m_Vertices.push_back(Vertex(glm::vec3(centerPoints.back().x, centerPoints.back().y, centerPoints.back().z), glm::vec<4, float, glm::packed_mediump>(0.0f, 1.0f, 0.0f, 1.0f)));
 #endif
 
 	for (uint32_t i = 0; i < rightPoints.size(); i++)
 	{
 #ifndef HELP_ME
-		m_Vertices.push_back(Vertex(glm::vec3(rightPoints[i].x, 0.0f, rightPoints[i].y), glm::vec<4, float, glm::packed_mediump>(1.0f, 0.0f, 0.0f, 1.0f)));
+		m_Vertices.push_back(Vertex(glm::vec3(rightPoints[i].x, rightPoints[i].y, rightPoints[i].z), glm::vec<4, float, glm::packed_mediump>(1.0f, 0.0f, 0.0f, 1.0f)));
 #else
 		AddDebugTriangle(rightPoints[i], { 1.0f, 0.0f, 0.0f, 1.0f });
 #endif
@@ -136,7 +163,7 @@ void Lane::Generate()
 	for (uint32_t i = 0; i < leftPoints.size(); i++)
 	{
 #ifndef HELP_ME
-		m_Vertices.push_back(Vertex(glm::vec3(leftPoints[i].x, 0.0f, leftPoints[i].y), glm::vec<4, float, glm::packed_mediump>(0.0f, 0.0f, 1.0f, 1.0f)));
+		m_Vertices.push_back(Vertex(glm::vec3(leftPoints[i].x, leftPoints[i].y, leftPoints[i].z), glm::vec<4, float, glm::packed_mediump>(0.0f, 0.0f, 1.0f, 1.0f)));
 #else
 		AddDebugTriangle(leftPoints[i], { 0.0f, 0.0f, 1.0f, 1.0f });
 #endif
@@ -145,7 +172,7 @@ void Lane::Generate()
 #ifdef HELP_ME
 	for (uint32_t i = 1; i < centerPoints.size() - 1; i++)
 	{
-		AddDebugTriangle(glm::vec3(centerPoints[i].x, centerPoints[i].z, 0.0f), { 1.0f, 1.0f, 1.0f, 1.0f });
+		AddDebugTriangle(glm::vec3(centerPoints[i].x, centerPoints[i].y, centerPoints[i].z), { 1.0f, 1.0f, 1.0f, 1.0f });
 	}
 #endif
 

@@ -1,5 +1,6 @@
 #include "GameLayer.h"
 #include "road/Lane.h"
+#include "terrain/Terrain.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -320,6 +321,8 @@ float lnBez[2] = { 0.0f, 0.0f };
 GLuint cubeVA, cubeVB, cubeIB;
 GLuint cube2VA, cube2VB, cube2IB;
 
+static Terrain* terrain;
+
 void GameLayer::OnAttach()
 {
 	//runDecode();
@@ -339,7 +342,7 @@ void GameLayer::OnAttach()
 	//ln.SetBezier({ 2.5f, 1.0f });
 	//ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 5.0f });
 	//ln.SetBezier({ 0.0f, 2.5f });
-	ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 3.0f, 0.0f, 3.0f });
+	ln.SetPosition({ 0.0f, 0.0f, 0.0f }, { 3.0f, 1.0f, 3.0f });
 	ln.SetBezier({ 0.0f, 3.0f });
 	ln.Generate();
 
@@ -351,8 +354,6 @@ void GameLayer::OnAttach()
 
 	lnBez[0] = 0.0f;
 	lnBez[1] = 3.0f;
-
-
 
 	lnLPos1[0] = 3.0f;
 	lnLPos1[1] = 3.0f;
@@ -518,6 +519,8 @@ void GameLayer::OnAttach()
 	glCreateBuffers(1, &cube2IB);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
+
+	terrain = new Terrain({ 100, 100 }, 0.2f);
 
 	m_TexPixel = LoadTexture("res/textures/pixel.png");
 	m_TexTest = LoadTexture("res/textures/test.png");
@@ -745,7 +748,7 @@ void GameLayer::OnUpdate(Timestep ts)
 		lnLBez[0] = lnBez[0];
 		lnLBez[1] = lnBez[1];
 
-		ln.SetPosition({ lnPos0[0], 0.0f, lnPos0[1] }, { lnPos1[0], 0.0f, lnPos1[1] });
+		ln.SetPosition({ lnPos0[0], 0.0f, lnPos0[1] }, { lnPos1[0], 1.0f, lnPos1[1] });
 		ln.SetBezier({ lnBez[0], lnBez[1] });
 		ln.Generate();
 
@@ -804,6 +807,8 @@ void GameLayer::OnUpdate(Timestep ts)
 	//
 	//glBindVertexArray(cube2VA);
 	//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+
+	terrain->Render(m_Camera, ts);
 }
 
 void GameLayer::OnImGuiRender()

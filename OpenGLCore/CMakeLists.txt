@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 project(OpenGLCore)
 configure_file(config.h.in config.h)
+
 set(OpenGLCore_SRC
 	# ==================================================================================
 	# =============================================================== Headers
@@ -46,6 +47,11 @@ set(OpenGLCore_SRC
 	# Util
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/OpenGLDebug.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/Shader.h"
+	
+	# Platform
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsWindow.h"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsInput.h"
+	
 	# ==================================================================================
 	# =============================================================== Source
 	# ==================================================================================
@@ -60,9 +66,6 @@ set(OpenGLCore_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Core/Log.cpp"
 	
 	# ImGui
-	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/cpp/imgui_stdlib.cpp"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/fonts/binary_to_compressed_c.cpp"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/misc/freetype/imgui_freetype.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_demo.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui_draw.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/ImGui/imgui.cpp"
@@ -73,12 +76,11 @@ set(OpenGLCore_SRC
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/OpenGLDebug.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/GLCore/Util/Shader.cpp"
 
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsWindow.h"
+	# Platform
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsInput.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsWindow.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/include/Platform/Windows/WindowsInput.h"
 	)
-		
+
 find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
