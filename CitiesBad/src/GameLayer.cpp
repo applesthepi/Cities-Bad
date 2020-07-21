@@ -520,7 +520,7 @@ void GameLayer::OnAttach()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
 
-	terrain = new Terrain({ 1000, 1000 }, 0.05f);
+	terrain = new Terrain({ 1200, 1200 }, 0.05f);
 
 	m_TexPixel = LoadTexture("res/textures/pixel.png");
 	m_TexTest = LoadTexture("res/textures/test.png");
@@ -781,8 +781,8 @@ void GameLayer::OnUpdate(Timestep ts)
 		glm::vec3(1.0f, 1.0f, 1.0f)
 	)));
 	
-	glBindVertexArray(lnVA);
-	glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
+	//glBindVertexArray(lnVA);
+	//glDrawElements(GL_TRIANGLES, lnIndices->size(), GL_UNSIGNED_INT, nullptr);
 
 	//glBindTextureUnit(0, m_TexPixel);
 	//glBindTextureUnit(1, m_TexTest);
@@ -815,7 +815,7 @@ void GameLayer::OnImGuiRender()
 {
 	using std::numbers::pi;
 
-	ImGui::Begin("Lane");
+	//ImGui::Begin("Lane");
 
 	//ImGui::SliderFloat3("CAM position", camPos, -100.0f, 100.0f);
 	//ImGui::SliderFloat3("CAM rotation", camRot, -pi, pi);
@@ -829,9 +829,9 @@ void GameLayer::OnImGuiRender()
 	//ImGui::SliderFloat3("OBJ2 rotation", obj2Rot, -pi, pi);
 	//ImGui::NewLine();
 
-	ImGui::SliderFloat2("P0", lnPos0, -10.0f, 10.0f);
-	ImGui::SliderFloat2("P1", lnPos1, -10.0f, 10.0f);
-	ImGui::SliderFloat2("Bez", lnBez, -10.0f, 10.0f);
+	//ImGui::SliderFloat2("P0", lnPos0, -10.0f, 10.0f);
+	//ImGui::SliderFloat2("P1", lnPos1, -10.0f, 10.0f);
+	//ImGui::SliderFloat2("Bez", lnBez, -10.0f, 10.0f);
 
 	//ImGui::Columns(2, "rEEEe");
 	//
@@ -843,5 +843,5 @@ void GameLayer::OnImGuiRender()
 	//for (uint32_t i = 0; i < Vertex::NV_DEBUG.size(); i++)
 	//	ImGui::Text(Vertex::NV_DEBUG[i].c_str());
 
-	ImGui::End();
+	//ImGui::End();
 }

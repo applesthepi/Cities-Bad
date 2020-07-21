@@ -139,19 +139,36 @@ void Terrain::BufferDefault()
 		return;
 
 	std::mt19937 gen;
-	std::uniform_real_distribution dis = std::uniform_real_distribution(0.6, 1.0);
+	std::uniform_real_distribution dis = std::uniform_real_distribution(0.5, 0.6);
 
-	module::Perlin perlin;
+	module::Perlin perlinGenerator;
+
+	glm::vec3 colorTip = { 0.5f, 0.5f, 0.5f };
+	glm::vec3 colorThick = { -0.05f, -0.03f, -0.05f };
+	glm::vec3 colorBase = { 0.1f, 0.2f, 0.1f };
 
 	for (uint64_t i = 0; i < m_Size.x * m_Size.y; i++)
 	{
+		double perlinTerrain = perlinGenerator.GetValue((float)(i % m_Size.x) / 500.0f, 1.0f, (float)floor((float)i / (float)m_Size.x) / 500.0f) / 0.5f;
+		double perlinTip = perlinGenerator.GetValue((float)(i % m_Size.x) / 500.0f, 1.0f, (float)floor((float)i / (float)m_Size.x) / 500.0f) / 5.0f;
+		double perlinThick = (1.0f - perlinGenerator.GetValue((float)(i % m_Size.x) / 500.0f, 1.0f, (float)floor((float)i / (float)m_Size.x) / 500.0f) / 1.0f) - 1.0f;
+		double perlinGrass = (perlinGenerator.GetValue((float)(i % m_Size.x) / 5.123f, 1.0f, (float)floor((float)i / (float)m_Size.x) / 5.123f) / 100.0f + 0.15f) / 2.0f;
+		double perlinGrassLow = (perlinGenerator.GetValue((float)(i % m_Size.x) / 100.123f, 1.0f, (float)floor((float)i / (float)m_Size.x) / 100.123f) / 50.0f + 0.0f) / 1.0f;
+
+		perlinTip = glm::clamp(static_cast<float>(perlinTip), 0.0f, 1.0f);
+		perlinThick = glm::clamp(static_cast<float>(perlinThick), 0.0f, 1.0f);
+		perlinGrass = glm::clamp(static_cast<float>(perlinGrass), 0.0f, 1.0f);
+		perlinGrass = glm::clamp(static_cast<float>(perlinGrassLow), 0.0f, 1.0f);
+
 		glm::vec3 offset = glm::vec3(
 			m_CellSize * (i % m_Size.x),
-			(float)perlin.GetValue((float)(i % m_Size.x) / 500.0f, 0.124f, (float)floor((float)i / (float)m_Size.x) / 500.0f),
+			static_cast<float>(perlinTerrain),
 			m_CellSize * floor(i / m_Size.x)
 		);
 
-		TerrainVertex vertex = TerrainVertex(offset, { 1.0f, dis(gen), 0.0f, 1.0f });
+		glm::vec3 thisColor = colorBase + (static_cast<float>(perlinTip) * colorTip) + (static_cast<float>(perlinThick) * colorThick) - static_cast<float>(perlinGrass + perlinGrassLow);
+		
+		TerrainVertex vertex = TerrainVertex(offset, glm::vec4(thisColor, 1.0f));
 
 		memcpy(m_Buffer + (i * 7), &vertex, sizeof(TerrainVertex));
 	}
