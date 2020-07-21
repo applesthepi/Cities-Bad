@@ -520,7 +520,7 @@ void GameLayer::OnAttach()
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
 
-	terrain = new Terrain({ 100, 100 }, 0.2f);
+	terrain = new Terrain({ 1000, 1000 }, 0.05f);
 
 	m_TexPixel = LoadTexture("res/textures/pixel.png");
 	m_TexTest = LoadTexture("res/textures/test.png");

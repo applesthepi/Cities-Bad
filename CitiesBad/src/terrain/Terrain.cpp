@@ -70,29 +70,7 @@ Terrain::Terrain(glm::vec<2, uint32_t> size, float cellSize)
 			indices[itile * 6 + 3] = vtile + m_Size.x + 1;
 			indices[itile * 6 + 4] = vtile + m_Size.x;
 			indices[itile * 6 + 5] = vtile;
-
-			//printf("%d %d %d %d %d %d\n",
-			//	indices[itile * 6 + 0],
-			//	indices[itile * 6 + 1],
-			//	indices[itile * 6 + 2],
-			//	indices[itile * 6 + 3],
-			//	indices[itile * 6 + 4],
-			//	indices[itile * 6 + 5]);
 		}
-
-		
-
-		//indices[i * 6 + 3] = i + m_Size.x + 1;
-		//indices[i * 6 + 4] = i + m_Size.x + 1;
-		//indices[i * 6 + 5] = i + m_Size.x + 1;
-
-		//printf("%d %d %d %d %d %d\n",
-		//	indices[i * 6 + 0],
-		//	indices[i * 6 + 1],
-		//	indices[i * 6 + 2],
-		//	indices[i * 6 + 3],
-		//	indices[i * 6 + 4],
-		//	indices[i * 6 + 5]);
 	}
 
 	glUseProgram(m_Shader->GetRendererID());
@@ -120,7 +98,9 @@ Terrain::Terrain(glm::vec<2, uint32_t> size, float cellSize)
 
 	glCreateBuffers(1, &m_IB);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IB);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6 * m_Size.x * m_Size.y, indices, GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6 * (m_Size.x - 1) * (m_Size.y - 1), indices, GL_STATIC_DRAW);
+
+	free(indices);
 }
 
 Terrain::~Terrain()
@@ -161,58 +141,20 @@ void Terrain::BufferDefault()
 	std::mt19937 gen;
 	std::uniform_real_distribution dis = std::uniform_real_distribution(0.6, 1.0);
 
-	glm::vec4 defaultColor = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-	//TerrainVertex vertex[4] = {
-	//	TerrainVertex({0.0f, 0.0f, 0.0f}, defaultColor),
-	//	TerrainVertex({m_CellSize, 0.0f, 0.0f}, defaultColor),
-	//	TerrainVertex({m_CellSize, 0.0f, m_CellSize}, defaultColor),
-	//	TerrainVertex({0.0f, 0.0f, m_CellSize}, defaultColor)
-	//};
-
 	module::Perlin perlin;
 
 	for (uint64_t i = 0; i < m_Size.x * m_Size.y; i++)
 	{
-		//uint64_t idx = i * terrainCellFloatCount;
 		glm::vec3 offset = glm::vec3(
 			m_CellSize * (i % m_Size.x),
-			(float)perlin.GetValue((float)(i % m_Size.x) / 70.0f, 0.124f, (float)floor((float)i / (float)m_Size.x) / 70.0f),
+			(float)perlin.GetValue((float)(i % m_Size.x) / 500.0f, 0.124f, (float)floor((float)i / (float)m_Size.x) / 500.0f),
 			m_CellSize * floor(i / m_Size.x)
 		);
 
 		TerrainVertex vertex = TerrainVertex(offset, { 1.0f, dis(gen), 0.0f, 1.0f });
 
 		memcpy(m_Buffer + (i * 7), &vertex, sizeof(TerrainVertex));
-
-		//TerrainVertex cvert[4];
-		//std::cout << perlin.GetValue(10.52, 2.561, 25.123) << std::endl;
-		//std::cout << perlin.GetValue(11.52, 2.561, 25.123) << std::endl;
-		//memcpy(cvert, vertex, terrainCellSize);
-		//cvert[0].Position += offset;
-		//cvert[1].Position += offset;
-		//cvert[2].Position += offset;
-		//cvert[3].Position += offset;
-		//memcpy(m_Buffer + idx, cvert, terrainCellSize);
 	}
-
-	//for (uint64_t i = 0; i < m_Size.x * m_Size.y; i++)
-	//{
-	//	for (uint64_t a = 0; a < 4; a++)
-	//	{
-	//		for (uint64_t b = 0; b < 3; b++)
-	//			printf("%d ", (int)roundf(m_Buffer[(i * terrainCellFloatCount) + (a * 7) + b]));
-	//
-	//		printf(" ");
-	//
-	//		for (uint64_t b = 0; b < 4; b++)
-	//			printf("%d ", (int)roundf(m_Buffer[(i * terrainCellFloatCount) + (a * 7) + b + 3]));
-	//
-	//		printf(" ");
-	//	}
-	//
-	//	puts("");
-	//}
 }
 
 void Terrain::BufferPosition(glm::vec<2, uint32_t> vertex, glm::vec3 position)
