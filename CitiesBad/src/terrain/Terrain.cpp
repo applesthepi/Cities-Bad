@@ -9,14 +9,15 @@ using namespace noise;
 struct TerrainVertex
 {
 	TerrainVertex()
-		:Position({ 0.0f, 0.0f, 0.0f }), Color({ 1.0f, 1.0f, 1.0f, 1.0f }), Normal({ 0.0f, 1.0f, 0.0f }) {}
+		:Position({ 0.0f, 0.0f, 0.0f }), Color({ 1.0f, 1.0f, 1.0f, 1.0f }), Normal({ 0.0f, 1.0f, 0.0f }), ShadowCoords({ 0.0f, 0.0f }) {}
 
 	TerrainVertex(glm::vec3 position, glm::vec4 color)
-		:Position(position), Color(color), Normal({ 0.0f, 1.0f, 0.0f }) {}
+		:Position(position), Color(color), Normal({ 0.0f, 1.0f, 0.0f }), ShadowCoords({ 0.0f, 0.0f }) {}
 
 	glm::vec3 Position;
 	glm::vec4 Color;
 	glm::vec3 Normal;
+	glm::vec2 ShadowCoords;
 };
 
 static size_t terrainCellSize = sizeof(TerrainVertex) * 4;
@@ -100,6 +101,9 @@ Terrain::Terrain(glm::vec<2, uint32_t> size, float cellSize)
 	glEnableVertexAttribArray(2);
 	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Normal));
 
+	glEnableVertexAttribArray(3);
+	glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, ShadowCoords));
+
 	glCreateBuffers(1, &m_IB);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_IB);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 6 * (m_Size.x - 1) * (m_Size.y - 1), indices, GL_STATIC_DRAW);
@@ -127,17 +131,6 @@ void Terrain::Render(Camera& camera, Timestep ts)
 
 	glUseProgram(m_Shader->GetRendererID());
 
-	glBindBuffer(GL_ARRAY_BUFFER, m_VB);
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Color));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Normal));
-
 	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_Projection"), 1, GL_FALSE, glm::value_ptr(camera.GetProjection()));
 	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_View"), 1, GL_FALSE, glm::value_ptr(camera.GetView()));
 	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_Model"), 1, GL_FALSE, glm::value_ptr(camera.ConstructModel(
@@ -145,9 +138,14 @@ void Terrain::Render(Camera& camera, Timestep ts)
 		{ 0.0f, 0.0f, 0.0f },
 		{ 1.0f, 1.0f, 1.0f }
 	)));
-	glUniform4f(glGetUniformLocation(m_Shader->GetRendererID(), "u_Color"), 1.0f, 1.0f, 1.0f, 1.0f);
-	glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightDirection"), 0.5f, 0.3f, 0.5f);
-	glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightColor"), 1.0f, 1.0f, 0.8f);
+	glUniform1i(glGetUniformLocation(m_Shader->GetRendererID(), "u_ShadowTexture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(m_Shader->GetRendererID(), "u_Light"), 1, GL_FALSE, glm::value_ptr(LIGHT));
+	glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightPos"), LIGHT_POS.x, LIGHT_POS.y, LIGHT_POS.z);
+	glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_ViewPos"), camera.GetRealPosition().x, camera.GetRealPosition().y, camera.GetRealPosition().z);
+
+	//glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightDirection"), 0.5f, 0.3f, 0.5f);
+	//glUniform3f(glGetUniformLocation(m_Shader->GetRendererID(), "u_LightColor"), 1.0f, 1.0f, 0.8f);
+	//glUniform4f(glGetUniformLocation(m_Shader->GetRendererID(), "u_Color"), 1.0f, 1.0f, 1.0f, 1.0f);
 
 	RenderSelf(camera, ts);
 }
@@ -160,8 +158,8 @@ void Terrain::Render(Camera& camera, Timestep ts, Shader* shader)
 	glUseProgram(shader->GetRendererID());
 
 	glBindBuffer(GL_ARRAY_BUFFER, m_VB);
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Position));
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(TerrainVertex), (const void*)offsetof(TerrainVertex, Position));
 
 	RenderSelf(camera, ts);
 }
@@ -242,7 +240,14 @@ void Terrain::BufferDefault()
 			);
 
 			glm::vec3 normal = glm::cross(side1, side2);
+
+			glm::vec2 shadowCoords = {
+				static_cast<float>(x) / (static_cast<float>(m_Size.x) - 1.0f),
+				static_cast<float>(y) / (static_cast<float>(m_Size.y) - 1.0f)
+			};
+
 			memcpy(m_Buffer + (vtile * (sizeof(TerrainVertex) / sizeof(float))) + 7, &normal, sizeof(glm::vec3));
+			memcpy(m_Buffer + (vtile * (sizeof(TerrainVertex) / sizeof(float))) + 10, &shadowCoords, sizeof(glm::vec2));
 		}
 	}
 }

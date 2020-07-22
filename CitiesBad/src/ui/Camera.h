@@ -20,7 +20,11 @@ public:
 	void SetNearFar(float nearZ, float farZ);
 	void SetDistance(float distance);
 
+	// virtual position
 	glm::vec3 GetPosition();
+	// real camera position
+	glm::vec3 GetRealPosition();
+
 	glm::vec2 GetRotation();
 	// forward normal from the camera
 	glm::vec3 GetCameraForward();
@@ -45,7 +49,7 @@ private:
 	glm::mat4 m_View, m_Projection;
 
 	float m_LerpBegin, m_LerpEnd;
-	glm::vec3 m_Position;
+	glm::vec3 m_Position, m_RealPosition;
 	glm::vec3 m_Rotation;
 	glm::vec3 m_CameraForward;
 	glm::vec3 m_LocationForward;

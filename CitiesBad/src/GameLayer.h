@@ -17,7 +17,6 @@ public:
 	virtual void OnUpdate(GLCore::Timestep ts) override;
 	virtual void OnImGuiRender() override;
 private:
-	GLCore::Utils::Shader* m_Shader;
 	Camera m_Camera;
 	
 	GLuint m_QuadVA, m_QuadVB, m_QuadIB;

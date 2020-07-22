@@ -169,6 +169,8 @@ using namespace GLCore::Utils;
 
 static float cameraDistance = 0.0f;
 static int16_t zoomIndex = 13;
+static Shader* testShader;
+static Shader* laneShader;
 
 void updateCameraDistance(Camera* camera)
 {
@@ -328,6 +330,33 @@ uint32_t depthBufferFB;
 uint32_t depthBufferTexture;
 const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
 
+float cubeData[] = {
+	0.0f, 0.0f, 0.0f,
+	1.0f, 0.0f, 0.0f,
+	1.0f, 1.0f, 0.0f,
+	0.0f, 1.0f, 0.0f,
+
+	0.0f, 0.0f, 1.0f,
+	1.0f, 0.0f, 1.0f,
+	1.0f, 1.0f, 1.0f,
+	0.0f, 1.0f, 1.0f
+};
+
+uint32_t cubeIndices[] = {
+	// front
+	0, 1, 2, 2, 3, 0,
+	// back
+	4, 5, 6, 6, 7, 4,
+	// left
+	0, 4, 7, 7, 3, 0,
+	// right
+	1, 5, 6, 6, 2, 1,
+	// top
+	4, 5, 1, 1, 0, 4,
+	// bottom
+	7, 6, 2, 2, 3, 7
+};
+
 void GameLayer::OnAttach()
 {
 	//runDecode();
@@ -341,9 +370,14 @@ void GameLayer::OnAttach()
 		"res/shaders/depth.frag.glsl"
 	);
 
-	m_Shader = Shader::FromGLSLTextFiles(
+	testShader = Shader::FromGLSLTextFiles(
 		"res/shaders/test.vert.glsl",
 		"res/shaders/test.frag.glsl"
+	);
+
+	laneShader = Shader::FromGLSLTextFiles(
+		"res/shaders/lane.vert.glsl",
+		"res/shaders/lane.frag.glsl"
 	);
 	
 	// debug
@@ -373,7 +407,7 @@ void GameLayer::OnAttach()
 
 	// Uniforms
 
-	glUseProgram(m_Shader->GetRendererID());
+	glUseProgram(laneShader->GetRendererID());
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -381,7 +415,7 @@ void GameLayer::OnAttach()
 	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ZERO);
 	//glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, GL_ONE, GL_ONE);
 
-	auto loc = glGetUniformLocation(m_Shader->GetRendererID(), "u_Textures");
+	auto loc = glGetUniformLocation(laneShader->GetRendererID(), "u_Textures");
 	int samplers[2] = { 0, 1 };
 	glUniform1iv(loc, 2, samplers);
 
@@ -418,32 +452,7 @@ void GameLayer::OnAttach()
 	//
 	//
 
-	float cubeData[] = {
-		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f,
-
-		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-	};
-
-	uint32_t cubeIndices[] = {
-		// front
-		0, 1, 2, 2, 3, 0,
-		// back
-		4, 5, 6, 6, 7, 4,
-		// left
-		0, 4, 7, 7, 3, 0,
-		// right
-		1, 5, 6, 6, 2, 1,
-		// top
-		4, 5, 1, 1, 0, 4,
-		// bottom
-		7, 6, 2, 2, 3, 7
-	};
+	glUseProgram(testShader->GetRendererID());
 
 	glCreateVertexArrays(1, &cubeVA);
 	glBindVertexArray(cubeVA);
@@ -452,21 +461,12 @@ void GameLayer::OnAttach()
 
 	glCreateBuffers(1, &cubeVB);
 	glBindBuffer(GL_ARRAY_BUFFER, cubeVB);
-	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(Vertex), cubeData, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 8 * 3 * sizeof(float), cubeData, GL_STATIC_DRAW);
 
 	// attribs
 
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Color));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexCoord));
-
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexID));
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
 
 	glCreateBuffers(1, &cubeIB);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cubeIB);
@@ -476,68 +476,64 @@ void GameLayer::OnAttach()
 	//
 	//
 
-	float cube2Data[] = {
-		0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 1.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f,
+	//float cube2Data[] = {
+	//	0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+	//	1.0f, 0.0f, 0.0f, 0.8f, 0.8f, 0.8f, 1.0f, 1.0f, 0.0f, 0.0f,
+	//	1.0f, 1.0f, 0.0f, 0.5f, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f, 0.0f,
+	//	0.0f, 1.0f, 0.0f, 0.3f, 0.3f, 0.3f, 1.0f, 0.0f, 1.0f, 0.0f,
+	//
+	//	0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
+	//	1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
+	//	1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
+	//	0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
+	//};
+	//
+	//uint32_t cube2Indices[] = {
+	//	// front
+	//	0, 1, 2, 2, 3, 0,
+	//	// back
+	//	4, 5, 6, 6, 7, 4,
+	//	// left
+	//	0, 4, 7, 7, 3, 0,
+	//	// right
+	//	1, 5, 6, 6, 2, 1,
+	//	// top
+	//	4, 5, 1, 1, 0, 4,
+	//	// bottom
+	//	7, 6, 2, 2, 3, 7
+	//};
+	//
+	//glCreateVertexArrays(1, &cube2VA);
+	//glBindVertexArray(cube2VA);
+	//
+	//// VBO
+	//
+	//glCreateBuffers(1, &cube2VB);
+	//glBindBuffer(GL_ARRAY_BUFFER, cube2VB);
+	//glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(Vertex), cube2Data, GL_STATIC_DRAW);
+	//
+	//// attribs
+	//
+	//glEnableVertexAttribArray(0);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Position));
+	//
+	//glEnableVertexAttribArray(1);
+	//glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Color));
+	//
+	//glEnableVertexAttribArray(2);
+	//glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexCoord));
+	//
+	//glEnableVertexAttribArray(3);
+	//glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexID));
+	//
+	//glCreateBuffers(1, &cube2IB);
+	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
+	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
 
-		0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f,
-		1.0f, 0.0f, 1.0f, 1.0f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
-		1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
-		0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f,
-	};
-
-	uint32_t cube2Indices[] = {
-		// front
-		0, 1, 2, 2, 3, 0,
-		// back
-		4, 5, 6, 6, 7, 4,
-		// left
-		0, 4, 7, 7, 3, 0,
-		// right
-		1, 5, 6, 6, 2, 1,
-		// top
-		4, 5, 1, 1, 0, 4,
-		// bottom
-		7, 6, 2, 2, 3, 7
-	};
-
-	glCreateVertexArrays(1, &cube2VA);
-	glBindVertexArray(cube2VA);
-
-	// VBO
-
-	glCreateBuffers(1, &cube2VB);
-	glBindBuffer(GL_ARRAY_BUFFER, cube2VB);
-	glBufferData(GL_ARRAY_BUFFER, 8 * sizeof(Vertex), cube2Data, GL_STATIC_DRAW);
-
-	// attribs
-
-	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Position));
-
-	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, Color));
-
-	glEnableVertexAttribArray(2);
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexCoord));
-
-	glEnableVertexAttribArray(3);
-	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)offsetof(Vertex, TexID));
-
-	glCreateBuffers(1, &cube2IB);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
-
-	terrain = new Terrain({ 100, 100 }, 0.05f);
+	terrain = new Terrain({ 1000, 1000 }, 0.05f);
 
 	m_TexPixel = LoadTexture("res/textures/pixel.png");
 	m_TexTest = LoadTexture("res/textures/test.png");
-
-	
-
-
 }
 
 void GameLayer::OnDetach()
@@ -546,9 +542,9 @@ void GameLayer::OnDetach()
 	//glDeleteBuffers(1, &m_QuadVB);
 	//glDeleteBuffers(1, &m_QuadIB);
 
-	glDeleteVertexArrays(1, &lnVA);
-	glDeleteBuffers(1, &lnVB);
-	glDeleteBuffers(1, &lnIB);
+	//glDeleteVertexArrays(1, &lnVA);
+	//glDeleteBuffers(1, &lnVB);
+	//glDeleteBuffers(1, &lnIB);
 }
 
 static bool movLeft = false;
@@ -722,14 +718,9 @@ static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 void renderScene(Camera& camera, Timestep ts)
 {
 	float near_plane = 0.0f, far_plane = 20.0f;
+
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	
-	glm::mat4 lightView = glm::lookAt(
-		glm::vec3(-1.0f, 3.0f, -1.0f),
-		glm::vec3(5.0f, 0.0f, 5.0f),
-		glm::vec3(0.0f, 1.0f, 0.0f));
-	
-	glm::mat4 lightSpaceMatrix = lightProjection * lightView * glm::mat4(1.0f);
+	glm::mat4 lightSpaceMatrix = lightProjection * LIGHT * glm::mat4(1.0f);
 	
 	// Render Depth Buffer
 
@@ -738,20 +729,48 @@ void renderScene(Camera& camera, Timestep ts)
 	
 	glUseProgram(depthShader->GetRendererID());
 	glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-	
 	glBindFramebuffer(GL_FRAMEBUFFER, depthBufferFB);
+	glClear(GL_DEPTH_BUFFER_BIT);
 	terrain->Render(camera, ts, depthShader);
+
+	{
+		//glUniform4f(glGetUniformLocation(depthShader->GetRendererID(), "u_Color"), 0.8f, 0.8f, 0.8f, 1.0f);
+		//glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(camera.ConstructMVP(
+		//	glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
+		//	glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
+		//	glm::vec3(1.0f, 1.0f, 1.0f)
+		//)));
+	
+		glBindVertexArray(cubeVA);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+	}
+
+	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glViewport(0, 0, 1920, 1080);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Full Render
 
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	glViewport(0, 0, 1920, 1080);
+	glBindTextureUnit(0, depthBufferTexture);
 	
 	terrain->Render(camera, ts);
+
+	{
+		glUseProgram(testShader->GetRendererID());
+
+		//glUniform4f(glGetUniformLocation(testShader->GetRendererID(), "u_Color"), 0.8f, 0.8f, 0.8f, 1.0f);
+		glUniformMatrix4fv(glGetUniformLocation(testShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(camera.ConstructMVP(
+			glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
+			glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
+			glm::vec3(1.0f, 1.0f, 1.0f)
+		)));
+
+		glBindVertexArray(cubeVA);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+	}
 }
 
 void GameLayer::OnUpdate(Timestep ts)
@@ -885,14 +904,14 @@ void GameLayer::OnImGuiRender()
 {
 	using std::numbers::pi;
 
-	//ImGui::Begin("Lane");
+	ImGui::Begin("Lane");
 
 	//ImGui::SliderFloat3("CAM position", camPos, -100.0f, 100.0f);
 	//ImGui::SliderFloat3("CAM rotation", camRot, -pi, pi);
 	//ImGui::NewLine();
 
-	//ImGui::SliderFloat3("OBJ1 position", obj1Pos, -100.0f, 100.0f);
-	//ImGui::SliderFloat3("OBJ1 rotation", obj1Rot, -pi, pi);
+	ImGui::SliderFloat3("OBJ1 position", obj1Pos, -10.0f, 10.0f);
+	ImGui::SliderFloat3("OBJ1 rotation", obj1Rot, -pi, pi);
 	//ImGui::NewLine();
 	//
 	//ImGui::SliderFloat3("OBJ2 position", obj2Pos, -100.0f, 100.0f);
@@ -913,5 +932,5 @@ void GameLayer::OnImGuiRender()
 	//for (uint32_t i = 0; i < Vertex::NV_DEBUG.size(); i++)
 	//	ImGui::Text(Vertex::NV_DEBUG[i].c_str());
 
-	//ImGui::End();
+	ImGui::End();
 }

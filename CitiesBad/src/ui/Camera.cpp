@@ -6,7 +6,7 @@ Camera::Camera(float fovRadians, float aspect, float nearZ, float farZ, float di
 	:m_FOV(fovRadians), m_Aspect(aspect), m_Near(nearZ), m_Far(farZ), m_CameraDistance(distance), m_Lerp(0.0f), m_Lerping(false), m_NeedsVPUpdate(true),
 	m_View(glm::mat4(1.0f)), m_Projection(glm::mat4(1.0f)),
 	m_LerpBegin(0.0f), m_LerpEnd(0.0f),
-	m_Position(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraForward(glm::vec3(0.0f, 0.0f, 1.0f)), m_LocationForward(glm::vec3(0.0f, 0.0f, 1.0f)) {}
+	m_Position(glm::vec3(0.0f)), m_RealPosition(glm::vec3(0.0f)), m_Rotation(glm::vec3(0.0f, 0.0f, 1.0f)), m_CameraForward(glm::vec3(0.0f, 0.0f, 1.0f)), m_LocationForward(glm::vec3(0.0f, 0.0f, 1.0f)) {}
 
 
 void Camera::FrameUpdate(Timestep ts)
@@ -89,6 +89,17 @@ void Camera::SetDistance(float distance)
 glm::vec3 Camera::GetPosition()
 {
 	return m_Position;
+}
+
+glm::vec3 Camera::GetRealPosition()
+{
+	if (m_NeedsVPUpdate)
+	{
+		m_NeedsVPUpdate = false;
+		ConstructVP();
+	}
+
+	return m_RealPosition;
 }
 
 glm::vec2 Camera::GetRotation()
@@ -178,19 +189,19 @@ void Camera::ConstructVP()
 	float phi = m_Rotation.y + (pi);
 
 	// camera position based on marker (target; imaginary) position
-	glm::vec3 cameraPosition = {
+	m_RealPosition = {
 		m_CameraDistance * sin(theta) * cos(phi),
 		m_CameraDistance * cos(theta),
 		m_CameraDistance * sin(theta) * sin(phi)
 	};
 
-	cameraPosition.x += m_Position.x;
-	cameraPosition.z += m_Position.z;
+	m_RealPosition.x += m_Position.x;
+	m_RealPosition.z += m_Position.z;
 
 	m_Projection = glm::perspective(m_FOV, m_Aspect, m_Near, m_Far);
 	m_View = glm::lookAt(
-		cameraPosition,
-		cameraPosition + m_CameraForward,
+		m_RealPosition,
+		m_RealPosition + m_CameraForward,
 		cameraUp
 	);
 }
