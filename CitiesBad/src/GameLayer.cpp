@@ -1,6 +1,7 @@
 #include "GameLayer.h"
 #include "road/Lane.h"
 #include "terrain/Terrain.h"
+#include "render/Quad.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -13,156 +14,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-/*
-#include <libavcodec/avcodec.h>
-
-#define INBUF_SIZE 4096
-
-static void pgm_save(unsigned char* buf, int wrap, int xsize, int ysize,
-	char* filename)
-{
-	FILE* f;
-	int i;
-
-	f = fopen(filename, "w");
-	fprintf(f, "P5\n%d %d\n%d\n", xsize, ysize, 255);
-	for (i = 0; i < ysize; i++)
-		fwrite(buf + i * wrap, 1, xsize, f);
-	fclose(f);
-}
-
-static void decode(AVCodecContext* dec_ctx, AVFrame* frame, AVPacket* pkt,
-	const char* filename)
-{
-	char buf[1024];
-	int ret;
-
-	ret = avcodec_send_packet(dec_ctx, pkt);
-	if (ret < 0) {
-		fprintf(stderr, "Error sending a packet for decoding\n");
-		exit(1);
-	}
-
-	while (ret >= 0) {
-		ret = avcodec_receive_frame(dec_ctx, frame);
-		if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-			return;
-		else if (ret < 0) {
-			fprintf(stderr, "Error during decoding\n");
-			exit(1);
-		}
-
-		printf("saving frame %3d\n", dec_ctx->frame_number);
-		fflush(stdout);
-
-		// the picture is allocated by the decoder. no need to
-		//   free it 
-		snprintf(buf, sizeof(buf), "%s-%d", filename, dec_ctx->frame_number);
-		pgm_save(frame->data[0], frame->linesize[0],
-			frame->width, frame->height, buf);
-	}
-}
-
-void runDecode()
-{
-	const char* filename, * outfilename;
-	const AVCodec* codec;
-	AVCodecParserContext* parser;
-	AVCodecContext* c = NULL;
-	FILE* f;
-	AVFrame* frame;
-	uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
-	uint8_t* data;
-	size_t   data_size;
-	int ret;
-	AVPacket* pkt;
-
-	filename = "input.avi";
-	outfilename = "output.avi";
-
-	pkt = av_packet_alloc();
-	if (!pkt)
-		exit(1);
-
-	// set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) 
-	memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-
-	// find the MPEG-1 video decoder 
-	codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
-	if (!codec) {
-		fprintf(stderr, "Codec not found\n");
-		exit(1);
-	}
-
-	parser = av_parser_init(codec->id);
-	if (!parser) {
-		fprintf(stderr, "parser not found\n");
-		exit(1);
-	}
-
-	c = avcodec_alloc_context3(codec);
-	if (!c) {
-		fprintf(stderr, "Could not allocate video codec context\n");
-		exit(1);
-	}
-
-	// For some codecs, such as msmpeg4 and mpeg4, width and height
-	//   MUST be initialized there because this information is not
-	//   available in the bitstream. 
-	//
-	//    open it 
-	if (avcodec_open2(c, codec, NULL) < 0) {
-		fprintf(stderr, "Could not open codec\n");
-		exit(1);
-	}
-
-	f = fopen(filename, "rb");
-	if (!f) {
-		fprintf(stderr, "Could not open %s\n", filename);
-		exit(1);
-	}
-
-	frame = av_frame_alloc();
-	if (!frame) {
-		fprintf(stderr, "Could not allocate video frame\n");
-		exit(1);
-	}
-
-	while (!feof(f)) {
-		// read raw data from the input file 
-		data_size = fread(inbuf, 1, INBUF_SIZE, f);
-		if (!data_size)
-			break;
-
-		// use the parser to split the data into frames 
-		data = inbuf;
-		while (data_size > 0) {
-			ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
-				data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-			if (ret < 0) {
-				fprintf(stderr, "Error while parsing\n");
-				exit(1);
-			}
-			data += ret;
-			data_size -= ret;
-
-			if (pkt->size)
-				decode(c, frame, pkt, outfilename);
-		}
-	}
-
-	 flush the decoder 
-	decode(c, frame, NULL, outfilename);
-
-	fclose(f);
-
-	av_parser_close(parser);
-	avcodec_free_context(&c);
-	av_frame_free(&frame);
-	av_packet_free(&pkt);
-}
-*/
 
 using namespace GLCore;
 using namespace GLCore::Utils;
@@ -328,7 +179,7 @@ static Shader* depthShader;
 
 uint32_t depthBufferFB;
 uint32_t depthBufferTexture;
-const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+const unsigned int SHADOW_WIDTH = 8192, SHADOW_HEIGHT = 8192;
 
 float cubeData[] = {
 	0.0f, 0.0f, 0.0f,
@@ -357,8 +208,16 @@ uint32_t cubeIndices[] = {
 	7, 6, 2, 2, 3, 7
 };
 
+Quad* quad;
+
 void GameLayer::OnAttach()
 {
+	Terrain::LIGHT_POS = glm::vec3(0.0f, 1.0f, 0.0f);
+	Terrain::LIGHT = glm::lookAt(
+		Terrain::LIGHT_POS,
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(0.0f, 1.0f, 0.0f));
+
 	//runDecode();
 
 	// setup
@@ -379,6 +238,8 @@ void GameLayer::OnAttach()
 		"res/shaders/lane.vert.glsl",
 		"res/shaders/lane.frag.glsl"
 	);
+
+	quad = new Quad("res/textures/test.png");
 	
 	// debug
 
@@ -530,10 +391,26 @@ void GameLayer::OnAttach()
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube2IB);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(uint32_t) * 36, cube2Indices, GL_STATIC_DRAW);
 
-	terrain = new Terrain({ 1000, 1000 }, 0.05f);
+	terrain = new Terrain({ 100, 100 }, 0.05f);
 
 	m_TexPixel = LoadTexture("res/textures/pixel.png");
 	m_TexTest = LoadTexture("res/textures/test.png");
+
+	glGenFramebuffers(1, &depthBufferFB);
+	glGenTextures(1, &depthBufferTexture);
+	glBindTexture(GL_TEXTURE_2D, depthBufferTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+		SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, depthBufferFB);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthBufferTexture, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void GameLayer::OnDetach()
@@ -717,24 +594,46 @@ static glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
 
 void renderScene(Camera& camera, Timestep ts)
 {
-	float near_plane = 0.0f, far_plane = 20.0f;
+	float terrainSize = static_cast<float>(terrain->GetSize().x) * static_cast<float>(terrain->GetCellSize());
+	float near_plane = -terrainSize, far_plane = terrainSize;
+	float scale = terrainSize;
 
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	glm::mat4 lightSpaceMatrix = lightProjection * LIGHT * glm::mat4(1.0f);
+	std::chrono::milliseconds ms = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch());
+	float lz = sinl(static_cast<double>(ms.count()) / 1000.0) * 5;
+	
+	Terrain::LIGHT_POS.x = terrainSize * 0.5;
+	Terrain::LIGHT_POS.z = (terrainSize * 0.5) + lz;
+	Terrain::LIGHT = glm::lookAt(
+		Terrain::LIGHT_POS,
+		glm::vec3(terrainSize * 0.5, 0.0f, terrainSize * 0.5),
+		glm::vec3(0.0f, 1.0f, 0.0f));
+
+	glm::mat4 lightProjection = glm::ortho(scale, -scale, scale, -scale, near_plane, far_plane);
+	glm::mat4 lightSpaceMatrix = lightProjection * Terrain::LIGHT;
+
+	terrain->SetLightProjection(lightProjection);
 	
 	// Render Depth Buffer
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glCullFace(GL_FRONT);
 	
 	glUseProgram(depthShader->GetRendererID());
-	glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+	glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_VP"), 1, GL_FALSE, glm::value_ptr(lightSpaceMatrix));
+
+	glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_M"), 1, GL_FALSE, glm::value_ptr(camera.ConstructModel(
+		glm::vec3(0.0f),
+		glm::vec3(0.0f),
+		glm::vec3(1.0f, 1.0f, 1.0f)
+	)));
 
 	glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 	glBindFramebuffer(GL_FRAMEBUFFER, depthBufferFB);
 	glClear(GL_DEPTH_BUFFER_BIT);
+	//glCullFace(GL_BACK);
 	terrain->Render(camera, ts, depthShader);
-
+	
 	{
 		//glUniform4f(glGetUniformLocation(depthShader->GetRendererID(), "u_Color"), 0.8f, 0.8f, 0.8f, 1.0f);
 		//glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(camera.ConstructMVP(
@@ -742,14 +641,21 @@ void renderScene(Camera& camera, Timestep ts)
 		//	glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
 		//	glm::vec3(1.0f, 1.0f, 1.0f)
 		//)));
+
+		glUniformMatrix4fv(glGetUniformLocation(depthShader->GetRendererID(), "u_M"), 1, GL_FALSE, glm::value_ptr(camera.ConstructModel(
+			glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
+			glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
+			glm::vec3(1.0f)
+		)));
 	
 		glBindVertexArray(cubeVA);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 	}
-
 	
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 	glViewport(0, 0, 1920, 1080);
+	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Full Render
@@ -761,16 +667,18 @@ void renderScene(Camera& camera, Timestep ts)
 	{
 		glUseProgram(testShader->GetRendererID());
 
-		//glUniform4f(glGetUniformLocation(testShader->GetRendererID(), "u_Color"), 0.8f, 0.8f, 0.8f, 1.0f);
+		glUniform4f(glGetUniformLocation(testShader->GetRendererID(), "u_Color"), 0.8f, 0.8f, 0.8f, 1.0f);
 		glUniformMatrix4fv(glGetUniformLocation(testShader->GetRendererID(), "u_MVP"), 1, GL_FALSE, glm::value_ptr(camera.ConstructMVP(
 			glm::vec3(obj1Pos[0], obj1Pos[1], obj1Pos[2]),
 			glm::vec3(obj1Rot[0], obj1Rot[1], obj1Rot[2]),
-			glm::vec3(1.0f, 1.0f, 1.0f)
+			glm::vec3(1.0f)
 		)));
 
 		glBindVertexArray(cubeVA);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 	}
+
+	quad->Render(camera, depthBufferTexture);
 }
 
 void GameLayer::OnUpdate(Timestep ts)
@@ -910,7 +818,7 @@ void GameLayer::OnImGuiRender()
 	//ImGui::SliderFloat3("CAM rotation", camRot, -pi, pi);
 	//ImGui::NewLine();
 
-	ImGui::SliderFloat3("OBJ1 position", obj1Pos, -10.0f, 10.0f);
+	ImGui::SliderFloat3("OBJ1 position", obj1Pos, -50.0f, 50.0f);
 	ImGui::SliderFloat3("OBJ1 rotation", obj1Rot, -pi, pi);
 	//ImGui::NewLine();
 	//

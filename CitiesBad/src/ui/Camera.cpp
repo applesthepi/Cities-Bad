@@ -199,6 +199,7 @@ void Camera::ConstructVP()
 	m_RealPosition.z += m_Position.z;
 
 	m_Projection = glm::perspective(m_FOV, m_Aspect, m_Near, m_Far);
+	//m_Projection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 0.0f, 100.0f);
 	m_View = glm::lookAt(
 		m_RealPosition,
 		m_RealPosition + m_CameraForward,

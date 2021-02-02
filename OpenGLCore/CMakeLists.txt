@@ -86,7 +86,6 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
-
 add_library(OpenGLCore STATIC
 	${OpenGLCore_SRC}
 )

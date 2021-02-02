@@ -42,6 +42,9 @@ set(CitiesBad_SRC
 	# Terrain
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/terrain/Terrain.h"
 	
+	# Render
+	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/render/Quad.h"
+	
 	# ==================================================================================
 	# =============================================================== Source
 	# ==================================================================================
@@ -60,51 +63,8 @@ set(CitiesBad_SRC
 	# Terrain
 	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/terrain/Terrain.cpp"
 	
-	# Noise
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/basictypes.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/exception.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/interp.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/latlon.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/mathconsts.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/misc.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/noisegen.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/noiseutils.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/vectortable.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/cylinder.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/line.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/model.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/plane.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/model/sphere.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/abs.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/add.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/billow.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/blend.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/cache.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/checkerboard.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/clamp.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/const.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/curve.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/cylinders.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/displace.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/exponent.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/invert.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/max.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/min.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/module.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/modulebase.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/multiply.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/perlin.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/power.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/ridgedmulti.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/rotatepoint.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/scalebias.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/scalepoint.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/select.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/spheres.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/terrace.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/translatepoint.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/turbulence.h"
-	#"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/noise/module/voronoi.h"
+	# Render
+	"${CMAKE_CURRENT_SOURCE_DIR}/CitiesBad/src/render/Quad.cpp"
 	)
 
 add_executable(citiesbad
